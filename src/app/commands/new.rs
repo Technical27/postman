@@ -2,7 +2,7 @@ use serenity::{
     framework::standard::{
         CommandResult,
         Args,
-        macros::command,
+        macros::command
     },
     client::Context,
     model::prelude::Message
