@@ -1,5 +1,5 @@
 [package]
-name = "disc-rs"
+name = "postman"
 version = "0.1.0"
 authors = ["Aamaruvi Yogamani <38222826+Technical27@users.noreply.github.com>"]
 edition = "2018"
