@@ -68,3 +68,41 @@ pub fn check_nsfw(ctx: &mut Context, msg: &Message) -> Result<bool, &'static str
     }
     Err("failed to check channel")
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serenity::framework::standard::{Args, Delimiter};
+
+    #[test]
+    fn loads_data_from_config() {
+        load_data();
+    }
+
+    #[test]
+    fn can_parse_valid_sub() {
+        let args = Args::new("memes", &[Delimiter::Single(' ')]);
+        parse_sub(args).unwrap();
+    }
+
+    #[test]
+    #[should_panic]
+    fn sub_with_invalid_name() {
+        let args = Args::new("&", &[Delimiter::Single(' ')]);
+        parse_sub(args).unwrap();
+    }
+
+    #[test]
+    #[should_panic]
+    fn sub_with_a_long_name() {
+        let args = Args::new("reallylongsubnamethatcantexist", &[Delimiter::Single(' ')]);
+        parse_sub(args).unwrap();
+    }
+
+    #[test]
+    #[should_panic]
+    fn sub_with_a_short_name() {
+        let args = Args::new("sub", &[Delimiter::Single(' ')]);
+        parse_sub(args).unwrap();
+    }
+}
