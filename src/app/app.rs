@@ -70,7 +70,7 @@ impl App {
         let appdata = client_data.get_mut::<AppData>().unwrap();
         if let Some(ptime) = appdata.cooldowns.get(&msg.author.tag()) {
             if ptime.elapsed() < appdata.cooldown_time {
-                println!("cooldown violated: {}", &msg.author.name);
+                msg.channel_id.send_message(&ctx.http, |m| m.content("`please wait a bit before doing any command`")).unwrap();
                 return false;
             }
         }
