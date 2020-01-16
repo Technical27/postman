@@ -4,7 +4,8 @@ use serenity::{
         Args
     },
     client::Context,
-    model::prelude::Message
+    model::prelude::Message,
+    model::prelude::ReactionType
 };
 
 use json::{self, JsonValue};
@@ -26,7 +27,7 @@ pub fn load_data() -> JsonValue {
 }
 
 pub fn send_post(ctx: &mut Context, msg: &Message, post: &Post) -> CommandResult {
-    msg.channel_id.send_message(&ctx.http, |m| {
+    let sent_msg = msg.channel_id.send_message(&ctx.http, |m| {
         m.embed(|e| {
             e.title(&post.title);
             e.author(|a| {
@@ -37,6 +38,7 @@ pub fn send_post(ctx: &mut Context, msg: &Message, post: &Post) -> CommandResult
             e.url(post.post_url())
         })
     })?;
+    sent_msg.react(&ctx, ReactionType::Unicode("\u{274C}".to_string()))?;
     Ok(())
 }
 

@@ -9,6 +9,8 @@ use serenity::{
         StandardFramework,
         macros::group,
     },
+    model::prelude::Reaction,
+    model::prelude::ReactionType,
     prelude::TypeMapKey
 };
 
@@ -41,16 +43,32 @@ impl EventHandler for AppHandle {
             msg.delete(ctx.http).unwrap();
         }
     }
+    fn reaction_add(&self, ctx: Context, reaction: Reaction) {
+        let mut client_data = ctx.data.write();
+        let appdata = client_data.get_mut::<AppData>().unwrap();
+
+        let msg = reaction.message(&ctx.http).unwrap();
+        let user = reaction.user(&ctx).unwrap();
+
+        if !msg.author.bot || user.bot { return; }
+
+        if appdata.client_id == msg.author.id.0 {
+            if let ReactionType::Unicode(emoji) = reaction.emoji {
+                if emoji == "\u{274C}" { msg.delete(&ctx).unwrap(); }
+            }
+        }
+    }
 }
 
 struct AppData {
     cooldowns: HashMap<String, Instant>,
-    cooldown_time: Duration
+    cooldown_time: Duration,
+    client_id: u64
 }
 
 impl AppData {
-    pub fn new(cooldown_time: u64) -> Self {
-        Self { cooldowns: HashMap::default(), cooldown_time: Duration::from_secs(cooldown_time) }
+    pub fn new(cooldown_time: u64, client_id: u64) -> Self {
+        Self { cooldowns: HashMap::default(), cooldown_time: Duration::from_secs(cooldown_time), client_id }
     }
 }
 
@@ -65,9 +83,14 @@ impl App {
 
     pub fn check(ctx: &mut Context, msg: &Message, _cmd_name: &str) -> bool {
         let re = Regex::new(r"discord.gg/[a-zA-Z0-9]{6}").unwrap();
-        if re.is_match(&msg.content) { return false; }
+
+        if re.is_match(&msg.content) || msg.author.bot { return false; }
+
         let mut client_data = ctx.data.write();
         let appdata = client_data.get_mut::<AppData>().unwrap();
+
+        if appdata.client_id == msg.author.id.0 { return false; }
+
         if let Some(ptime) = appdata.cooldowns.get(&msg.author.tag()) {
             if ptime.elapsed() < appdata.cooldown_time {
                 msg.channel_id.send_message(&ctx.http, |m| m.content("`please wait a bit before doing any command`")).unwrap();
@@ -90,6 +113,8 @@ impl App {
             None => 3
         };
 
+        let client_id = data["client_id"].as_u64().unwrap();
+
         client.with_framework(
             StandardFramework::new()
             .configure(|c| c.prefix(&prefix))
@@ -99,7 +124,7 @@ impl App {
 
         {
             let mut client_data = client.data.write();
-            client_data.insert::<AppData>(AppData::new(cooldown_time));
+            client_data.insert::<AppData>(AppData::new(cooldown_time, client_id));
         }
 
         client.start()?;
