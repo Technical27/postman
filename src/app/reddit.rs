@@ -48,3 +48,12 @@ pub fn get_reddit_api(url: &str) -> Result<JsonValue, RedditAPIError> {
 
     Ok(json::parse(&text)?)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn reddit_api() {
+        get_reddit_api("https://reddit.com/r/memes/random.json").unwrap();
+    }
+}
