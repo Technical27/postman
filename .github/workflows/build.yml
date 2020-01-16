@@ -9,5 +9,7 @@ jobs:
     - uses: actions/checkout@v1
     - name: Build
       run: cargo build --verbose
+    - name: Generate config.json
+      run: echo '{"token": "not a real token", "user_agent": "bot testing", "default_sub": "memes", "prefix": "-"}' > config.json
     - name: Run tests
       run: cargo test --verbose
