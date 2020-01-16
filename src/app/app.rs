@@ -7,9 +7,7 @@ use serenity::{
     model::prelude::Message,
     framework::standard::{
         StandardFramework,
-        macros::{
-            group
-        },
+        macros::group,
     },
     prelude::TypeMapKey
 };
