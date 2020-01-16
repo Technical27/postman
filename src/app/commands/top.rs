@@ -1,9 +1,7 @@
 use serenity::{
     framework::standard::{
         CommandResult,
-        macros::{
-            command,
-        },
+        macros::command,
         Args
     },
     client::Context,

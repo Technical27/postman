@@ -61,7 +61,7 @@ impl TypeMapKey for AppData {
 pub struct App;
 
 impl App {
-    pub fn new() -> Self {Self}
+    pub fn new() -> Self { Self }
 
     pub fn check(ctx: &mut Context, msg: &Message, _cmd_name: &str) -> bool {
         let re = Regex::new(r"discord.gg/[a-zA-Z0-9]{6}").unwrap();
