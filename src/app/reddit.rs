@@ -1,5 +1,5 @@
 use json::{self, JsonValue};
-use reqwest::blocking as reqwest;
+use ::reqwest::blocking as reqwest;
 
 use super::helpers::*;
 
