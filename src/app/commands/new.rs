@@ -1,18 +1,14 @@
 use serenity::{
-    framework::standard::{
-        CommandResult,
-        Args,
-        macros::command
-    },
     client::Context,
-    model::prelude::Message
+    framework::standard::{macros::command, Args, CommandResult},
+    model::prelude::Message,
 };
 
-use json::{self, JsonValue};
-use super::post::Post;
 use super::helpers::*;
+use super::post::Post;
 use super::reddit::*;
 use super::CommandError;
+use json::{self, JsonValue};
 
 fn get_new(sub: &str) -> Result<Post, RedditAPIError> {
     let res = get_reddit_api(&format!("https://reddit.com/r/{}/new.json", &sub))?;
@@ -20,7 +16,9 @@ fn get_new(sub: &str) -> Result<Post, RedditAPIError> {
     if let JsonValue::Array(arr) = &res["data"]["children"] {
         for post in arr.iter() {
             let data = &post["data"];
-            if data["post_hint"] != "image" { break; }
+            if data["post_hint"] != "image" {
+                break;
+            }
             let author = &data["author"].to_string();
             let title = &data["title"].to_string();
             let image = &data["url"].to_string();

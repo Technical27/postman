@@ -1,11 +1,8 @@
 use serenity::{
-    framework::standard::{
-        CommandResult,
-        Args
-    },
     client::Context,
+    framework::standard::{Args, CommandResult},
     model::prelude::Message,
-    model::prelude::ReactionType
+    model::prelude::ReactionType,
 };
 
 use json::{self, JsonValue};
@@ -18,12 +15,11 @@ use super::post::Post;
 use super::reddit::RedditAPIError;
 
 pub fn load_data() -> JsonValue {
-   let data = json::parse(
-       &String::from_utf8(
-           fs::read("config.json").expect("failed to load config file")
-       ).unwrap()
-   ).expect("failed to parse config file");
-   data
+    let data = json::parse(
+        &String::from_utf8(fs::read("config.json").expect("failed to load config file")).unwrap(),
+    )
+    .expect("failed to parse config file");
+    data
 }
 
 pub fn send_post(ctx: &mut Context, msg: &Message, post: &Post) -> CommandResult {
@@ -43,7 +39,8 @@ pub fn send_post(ctx: &mut Context, msg: &Message, post: &Post) -> CommandResult
 }
 
 pub fn send_error(ctx: &mut Context, msg: &Message, err: Box<dyn error::Error>) -> CommandResult {
-    msg.channel_id.send_message(&ctx.http, |m| m.content(format!("`{}`", err)))?;
+    msg.channel_id
+        .send_message(&ctx.http, |m| m.content(format!("`{}`", err)))?;
     println!("error while running command: {}", err);
     Ok(())
 }

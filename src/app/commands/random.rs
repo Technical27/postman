@@ -1,26 +1,23 @@
 use serenity::{
-    framework::standard::{
-        CommandResult,
-        Args,
-        macros::command
-    },
     client::Context,
-    model::prelude::Message
+    framework::standard::{macros::command, Args, CommandResult},
+    model::prelude::Message,
 };
 
 use json::{self, JsonValue};
 
 use super::helpers::*;
-use super::reddit::*;
 use super::post::Post;
+use super::reddit::*;
 use super::CommandError;
 
-fn get_random (sub: &str) -> Result<Post, RedditAPIError> {
+fn get_random(sub: &str) -> Result<Post, RedditAPIError> {
     let mut i = 0;
 
-    let post =
-    loop {
-        if i == 5 { return Err(RedditAPIError::new("cant find any image")); }
+    let post = loop {
+        if i == 5 {
+            return Err(RedditAPIError::new("cant find any image"));
+        }
         let res = get_reddit_api(&format!("https://reddit.com/r/{}/random.json", sub))?;
         if let JsonValue::Object(p) = &res[0]["data"]["children"][0] {
             let data = &p["data"];
@@ -70,9 +67,7 @@ mod tests {
         let post1 = get_random("memes").unwrap();
         std::thread::sleep(std::time::Duration::from_secs(1));
         let post2 = get_random("memes").unwrap();
-        let equal =
-            post1.title == post2.title &&
-            post1.author == post2.author;
+        let equal = post1.title == post2.title && post1.author == post2.author;
 
         assert!(!equal);
     }

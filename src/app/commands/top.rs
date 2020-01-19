@@ -1,27 +1,25 @@
 use serenity::{
-    framework::standard::{
-        CommandResult,
-        macros::command,
-        Args
-    },
     client::Context,
-    model::prelude::Message
+    framework::standard::{macros::command, Args, CommandResult},
+    model::prelude::Message,
 };
 
 use json::{self, JsonValue};
 
 use super::helpers::*;
-use super::reddit::*;
 use super::post::*;
+use super::reddit::*;
 use super::CommandError;
 
-fn get_top (sub: &str) -> Result<Post, RedditAPIError> {
+fn get_top(sub: &str) -> Result<Post, RedditAPIError> {
     let res = get_reddit_api(&format!("https://reddit.com/r/{}/top.json?t=hour", &sub))?;
 
     if let JsonValue::Array(arr) = &res["data"]["children"] {
         for post in arr.iter() {
             let data = &post["data"];
-            if data["post_hint"] != "image" { break; }
+            if data["post_hint"] != "image" {
+                break;
+            }
             let author = &data["author"].to_string();
             let title = &data["title"].to_string();
             let image = &data["url"].to_string();

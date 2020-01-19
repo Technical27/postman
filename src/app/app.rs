@@ -1,28 +1,18 @@
 use serenity::{
-    client::{
-        EventHandler,
-        Context,
-        Client
-    },
+    client::{Client, Context, EventHandler},
+    framework::standard::{macros::group, StandardFramework},
     model::prelude::Message,
-    framework::standard::{
-        StandardFramework,
-        macros::group,
-    },
     model::prelude::Reaction,
     model::prelude::ReactionType,
-    prelude::TypeMapKey
+    prelude::TypeMapKey,
 };
 
 use regex::Regex;
 
 use std::{
-    error,
     collections::HashMap,
-    time::{
-        Instant,
-        Duration
-    }
+    error,
+    time::{Duration, Instant},
 };
 
 use super::commands::*;
@@ -39,7 +29,10 @@ impl EventHandler for AppHandle {
     fn message(&self, ctx: Context, msg: Message) {
         let re = Regex::new(r"discord.gg/[a-zA-Z0-9]{6}").unwrap();
         if re.is_match(&msg.content) {
-            println!("found discord invite: {}\nfrom: {}", msg.content, msg.author.name);
+            println!(
+                "found discord invite: {}\nfrom: {}",
+                msg.content, msg.author.name
+            );
             msg.delete(ctx.http).unwrap();
         }
     }
@@ -50,11 +43,15 @@ impl EventHandler for AppHandle {
         let msg = reaction.message(&ctx.http).unwrap();
         let user = reaction.user(&ctx).unwrap();
 
-        if !msg.author.bot || user.bot { return; }
+        if !msg.author.bot || user.bot {
+            return;
+        }
 
         if appdata.client_id == msg.author.id.0 {
             if let ReactionType::Unicode(emoji) = reaction.emoji {
-                if emoji == "\u{274C}" { msg.delete(&ctx).unwrap(); }
+                if emoji == "\u{274C}" {
+                    msg.delete(&ctx).unwrap();
+                }
             }
         }
     }
@@ -63,12 +60,16 @@ impl EventHandler for AppHandle {
 struct AppData {
     cooldowns: HashMap<String, Instant>,
     cooldown_time: Duration,
-    client_id: u64
+    client_id: u64,
 }
 
 impl AppData {
     pub fn new(cooldown_time: u64, client_id: u64) -> Self {
-        Self { cooldowns: HashMap::default(), cooldown_time: Duration::from_secs(cooldown_time), client_id }
+        Self {
+            cooldowns: HashMap::default(),
+            cooldown_time: Duration::from_secs(cooldown_time),
+            client_id,
+        }
     }
 }
 
@@ -79,21 +80,31 @@ impl TypeMapKey for AppData {
 pub struct App;
 
 impl App {
-    pub fn new() -> Self { Self }
+    pub fn new() -> Self {
+        Self
+    }
 
     pub fn check(ctx: &mut Context, msg: &Message, _cmd_name: &str) -> bool {
         let re = Regex::new(r"discord.gg/[a-zA-Z0-9]{6}").unwrap();
 
-        if re.is_match(&msg.content) || msg.author.bot { return false; }
+        if re.is_match(&msg.content) || msg.author.bot {
+            return false;
+        }
 
         let mut client_data = ctx.data.write();
         let appdata = client_data.get_mut::<AppData>().unwrap();
 
-        if appdata.client_id == msg.author.id.0 { return false; }
+        if appdata.client_id == msg.author.id.0 {
+            return false;
+        }
 
         if let Some(ptime) = appdata.cooldowns.get(&msg.author.tag()) {
             if ptime.elapsed() < appdata.cooldown_time {
-                msg.channel_id.send_message(&ctx.http, |m| m.content("`please wait a bit before doing any command`")).unwrap();
+                msg.channel_id
+                    .send_message(&ctx.http, |m| {
+                        m.content("`please wait a bit before doing any command`")
+                    })
+                    .unwrap();
                 return false;
             }
         }
@@ -107,19 +118,18 @@ impl App {
 
         let prefix = data["prefix"].to_string();
 
-        let cooldown_time =
-        match data["cooldown_time"].as_u64() {
+        let cooldown_time = match data["cooldown_time"].as_u64() {
             Some(time) => time,
-            None => 3
+            None => 3,
         };
 
         let client_id = data["client_id"].as_u64().unwrap();
 
         client.with_framework(
             StandardFramework::new()
-            .configure(|c| c.prefix(&prefix))
-            .before(Self::check)
-            .group(&GENERAL_GROUP)
+                .configure(|c| c.prefix(&prefix))
+                .before(Self::check)
+                .group(&GENERAL_GROUP),
         );
 
         {
