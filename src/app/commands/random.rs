@@ -4,14 +4,14 @@ use serenity::{
     model::prelude::Message,
 };
 
-use json::{self, JsonValue};
+use json::JsonValue;
 
 use super::helpers::*;
 use super::post::Post;
 use super::reddit::*;
 use super::CommandError;
 
-fn get_random(sub: &str) -> Result<Post, RedditAPIError> {
+fn get_random(sub: &str) -> RedditResult<Post> {
     let mut i = 0;
 
     let post = loop {

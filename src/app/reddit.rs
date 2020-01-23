@@ -1,4 +1,4 @@
-use json::{self, JsonValue};
+use json::JsonValue;
 use ::reqwest::blocking as reqwest;
 
 use super::helpers::*;
@@ -17,6 +17,8 @@ impl RedditAPIError {
         }
     }
 }
+
+pub type RedditResult<T> = Result<T, RedditAPIError>;
 
 impl std::fmt::Display for RedditAPIError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
@@ -43,7 +45,7 @@ impl From<json::JsonError> for RedditAPIError {
     }
 }
 
-pub fn get_reddit_api(url: &str) -> Result<JsonValue, RedditAPIError> {
+pub fn get_reddit_api(url: &str) -> RedditResult<JsonValue> {
     let http = reqwest::Client::builder()
         .user_agent(load_data()["user_agent"].to_string())
         .build()?;

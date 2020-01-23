@@ -10,8 +10,8 @@ use super::reddit::*;
 use super::CommandError;
 use json::JsonValue;
 
-fn get_new(sub: &str) -> RedditResult<Post> {
-    let res = get_reddit_api(&format!("https://reddit.com/r/{}/new.json", &sub))?;
+fn get_rising(sub: &str) -> RedditResult<Post> {
+    let res = get_reddit_api(&format!("https://reddit.com/r/{}/rising.json", &sub))?;
 
     if let JsonValue::Array(arr) = &res["data"]["children"] {
         for post in arr.iter() {
@@ -32,8 +32,8 @@ fn get_new(sub: &str) -> RedditResult<Post> {
 }
 
 #[command]
-pub fn new(ctx: &mut Context, msg: &Message, args: Args) -> CommandResult {
-    let post = get_new(&parse_sub(args)?)?;
+pub fn rising(ctx: &mut Context, msg: &Message, args: Args) -> CommandResult {
+    let post = get_rising(&parse_sub(args)?)?;
     if post.nsfw && !check_nsfw(ctx, msg)? {
         return send_error(ctx, msg, CommandError::boxed("this channel isn't nsfw"));
     }
@@ -44,11 +44,11 @@ pub fn new(ctx: &mut Context, msg: &Message, args: Args) -> CommandResult {
 mod tests {
     use super::*;
     #[test]
-    fn get_new_posts() {
+    fn get_rising_posts() {
         let subs = ["dankmemes", "memes", "cursedcomments"];
         let mut passed = false;
         for sub in subs.iter() {
-            if let Ok(_) = get_new(sub) {
+            if let Ok(_) = get_rising(sub) {
                 passed = true;
                 break;
             }

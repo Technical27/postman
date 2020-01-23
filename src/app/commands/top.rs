@@ -4,14 +4,14 @@ use serenity::{
     model::prelude::Message,
 };
 
-use json::{self, JsonValue};
+use json::JsonValue;
 
 use super::helpers::*;
 use super::post::*;
 use super::reddit::*;
 use super::CommandError;
 
-fn get_top(sub: &str) -> Result<Post, RedditAPIError> {
+fn get_top(sub: &str) -> RedditResult<Post> {
     let res = get_reddit_api(&format!("https://reddit.com/r/{}/top.json?t=hour", &sub))?;
 
     if let JsonValue::Array(arr) = &res["data"]["children"] {

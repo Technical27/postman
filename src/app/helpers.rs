@@ -5,7 +5,7 @@ use serenity::{
     model::prelude::ReactionType,
 };
 
-use json::{self, JsonValue};
+use json::JsonValue;
 
 use regex::Regex;
 

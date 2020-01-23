@@ -20,7 +20,7 @@ use super::commands::*;
 use super::helpers::*;
 
 #[group]
-#[commands(top, test, random, new)]
+#[commands(top, test, random, new, rising)]
 pub struct General;
 
 struct AppHandle;
