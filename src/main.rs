@@ -1,3 +1,6 @@
+#[macro_use]
+extern crate diesel;
+
 mod app;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {

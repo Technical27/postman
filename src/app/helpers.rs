@@ -13,6 +13,12 @@ use std::{error, fs};
 
 use super::post::Post;
 use super::reddit::RedditAPIError;
+use diesel::prelude::*;
+
+use super::app::AppData;
+
+use super::schema;
+use super::models;
 
 pub fn load_data() -> JsonValue {
     let data = json::parse(
@@ -23,6 +29,8 @@ pub fn load_data() -> JsonValue {
 }
 
 pub fn send_post(ctx: &mut Context, msg: &Message, post: &Post) -> CommandResult {
+    use schema::messages::dsl::*;
+
     let sent_msg = msg.channel_id.send_message(&ctx.http, |m| {
         m.embed(|e| {
             e.title(&post.title);
@@ -34,6 +42,16 @@ pub fn send_post(ctx: &mut Context, msg: &Message, post: &Post) -> CommandResult
             e.url(post.post_url())
         })
     })?;
+
+    let mut client_data = ctx.data.write();
+    let appdata = client_data.get_mut::<AppData>().unwrap();
+    let conn = appdata.db_pool.get().unwrap();
+
+    diesel::insert_into(messages)
+        .values(&models::Message::new(&sent_msg, msg))
+        .execute(&conn)
+        .expect("failed saving message");
+
     sent_msg.react(&ctx, ReactionType::Unicode("\u{274C}".to_string()))?;
     Ok(())
 }

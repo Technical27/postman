@@ -1,3 +1,5 @@
 /target
 **/*.rs.bk
 config.json
+.env
+db.sqlite3
