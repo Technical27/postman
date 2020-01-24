@@ -17,8 +17,8 @@ use diesel::prelude::*;
 
 use super::app::AppData;
 
-use super::schema;
 use super::models;
+use super::schema;
 
 pub fn load_data() -> JsonValue {
     let data = json::parse(

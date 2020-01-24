@@ -15,16 +15,16 @@ use std::{
     time::{Duration, Instant},
 };
 
-use diesel::sqlite::SqliteConnection;
-use diesel::r2d2;
 use diesel::prelude::*;
+use diesel::r2d2;
+use diesel::sqlite::SqliteConnection;
 
 use super::commands::*;
 
 use super::helpers::*;
 
-use super::schema;
 use super::models;
+use super::schema;
 
 #[group]
 #[commands(top, test, random, new, rising)]
@@ -60,7 +60,8 @@ impl EventHandler for AppHandle {
         if appdata.client_id == msg.author.id.0 {
             if let ReactionType::Unicode(emoji) = reaction.emoji {
                 if emoji == "\u{274C}" {
-                    let results = dsl::messages.filter(dsl::msg_id.eq(msg.id.0 as i64))
+                    let results = dsl::messages
+                        .filter(dsl::msg_id.eq(msg.id.0 as i64))
                         .load::<models::Message>(&conn)
                         .expect("error getting messages from database");
 
@@ -70,7 +71,10 @@ impl EventHandler for AppHandle {
 
                     let cmd_msg_id = results[0].cmd_msg_id as u64;
 
-                    let cmd_msg = ctx.http.get_message(*msg.channel_id.as_u64(), cmd_msg_id).unwrap();
+                    let cmd_msg = ctx
+                        .http
+                        .get_message(*msg.channel_id.as_u64(), cmd_msg_id)
+                        .unwrap();
 
                     if cmd_msg.author != user {
                         return;
@@ -88,16 +92,20 @@ pub struct AppData {
     pub cooldowns: HashMap<String, Instant>,
     pub cooldown_time: Duration,
     pub client_id: u64,
-    pub db_pool: r2d2::Pool<r2d2::ConnectionManager<SqliteConnection>>
+    pub db_pool: r2d2::Pool<r2d2::ConnectionManager<SqliteConnection>>,
 }
 
 impl AppData {
-    pub fn new(cooldown_time: u64, client_id: u64, db_pool: r2d2::Pool<r2d2::ConnectionManager<SqliteConnection>>) -> Self {
+    pub fn new(
+        cooldown_time: u64,
+        client_id: u64,
+        db_pool: r2d2::Pool<r2d2::ConnectionManager<SqliteConnection>>,
+    ) -> Self {
         Self {
             cooldowns: HashMap::default(),
             cooldown_time: Duration::from_secs(cooldown_time),
             client_id,
-            db_pool
+            db_pool,
         }
     }
 }
@@ -142,11 +150,10 @@ impl App {
     }
 
     pub fn start(&mut self) -> Result<(), Box<dyn error::Error>> {
-        let mgr: r2d2::ConnectionManager<SqliteConnection> = r2d2::ConnectionManager::new("db.sqlite3");
+        let mgr: r2d2::ConnectionManager<SqliteConnection> =
+            r2d2::ConnectionManager::new("db.sqlite3");
 
-        let pool = r2d2::Pool::builder()
-            .max_size(15)
-            .build(mgr)?;
+        let pool = r2d2::Pool::builder().max_size(15).build(mgr)?;
 
         let data = load_data();
         let mut client = Client::new(data["token"].to_string(), AppHandle)?;
