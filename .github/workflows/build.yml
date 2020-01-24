@@ -8,7 +8,7 @@ jobs:
     steps:
     - uses: actions/checkout@v1
     - name: Install sqlite3
-      run: apt install libsqlite3-dev sqlite3
+      run: sudo apt install libsqlite3-dev sqlite3
     - name: Build
       run: cargo build --verbose
     - name: Generate config.json
