@@ -84,6 +84,24 @@ pub fn check_nsfw(ctx: &mut Context, msg: &Message) -> Result<bool, &'static str
     Err("failed to check channel")
 }
 
+pub fn parse_post(data: &JsonValue) -> Option<Post> {
+    let data = &data["data"];
+    if data["post_hint"] != "image"
+        && data["post_hint"] != "hosted:video"
+        && data["post_hint"] != "rich:video"
+    {
+        return None;
+    }
+
+    let author = data["author"].to_string();
+    let title = data["title"].to_string();
+    let permalink = data["permalink"].to_string();
+    let nsfw = data["over_18"].as_bool().unwrap();
+    let image = data["url"].to_string();
+
+    Some(Post::new(&author, &title, &image, &permalink, nsfw))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

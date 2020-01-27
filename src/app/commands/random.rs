@@ -4,8 +4,6 @@ use serenity::{
     model::prelude::Message,
 };
 
-use json::JsonValue;
-
 use super::helpers::*;
 use super::post::Post;
 use super::reddit::*;
@@ -19,18 +17,8 @@ fn get_random(sub: &str) -> RedditResult<Post> {
             return Err(RedditAPIError::new("cant find any image"));
         }
         let res = get_reddit_api(&format!("https://reddit.com/r/{}/random.json", sub))?;
-        if let JsonValue::Object(p) = &res[0]["data"]["children"][0] {
-            let data = &p["data"];
-            if data["post_hint"] != "image" {
-                i += 1;
-                continue;
-            }
-            let author = &data["author"].to_string();
-            let title = &data["title"].to_string();
-            let image = &data["url"].to_string();
-            let permalink = &data["permalink"].to_string();
-            let nsfw = data["over_18"].as_bool().unwrap();
-            break Post::new(author, title, image, permalink, nsfw);
+        if let Some(post) = parse_post(&res[0]["data"]["children"][0]) {
+            break post;
         }
         i += 1;
     };
