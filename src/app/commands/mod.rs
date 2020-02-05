@@ -1,10 +1,11 @@
+mod debug;
 mod new;
 mod random;
 mod rising;
 mod test;
 mod top;
 
-#[derive(Debug)]
+/*#[derive(Debug)]
 pub struct CommandError {
     msg: String,
 }
@@ -15,10 +16,6 @@ impl CommandError {
             msg: msg.to_string(),
         }
     }
-
-    pub fn boxed(msg: &str) -> Box<Self> {
-        Box::new(Self::new(msg))
-    }
 }
 
 impl std::fmt::Display for CommandError {
@@ -26,10 +23,11 @@ impl std::fmt::Display for CommandError {
         write!(f, "{}", self.msg)
     }
 }
-impl std::error::Error for CommandError {}
+impl std::error::Error for CommandError {} */
 
 use super::*;
 
+pub use debug::*;
 pub use new::*;
 pub use random::*;
 pub use rising::*;

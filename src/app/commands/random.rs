@@ -7,7 +7,6 @@ use serenity::{
 use super::helpers::*;
 use super::post::Post;
 use super::reddit::*;
-use super::CommandError;
 
 fn get_random(sub: &str) -> RedditResult<Post> {
     let mut i = 0;
@@ -17,7 +16,7 @@ fn get_random(sub: &str) -> RedditResult<Post> {
             return Err(RedditAPIError::new("cant find any image"));
         }
         let res = get_reddit_api(&format!("https://reddit.com/r/{}/random.json", sub))?;
-        if let Some(post) = parse_post(&res[0]["data"]["children"][0]) {
+        if let Ok(post) = parse_post(&res[0]["data"]["children"][0]) {
             break post;
         }
         i += 1;
@@ -28,35 +27,13 @@ fn get_random(sub: &str) -> RedditResult<Post> {
 
 #[command]
 pub fn random(ctx: &mut Context, msg: &Message, args: Args) -> CommandResult {
-    let post = get_random(&parse_sub(args)?)?;
-    if post.nsfw && !check_nsfw(ctx, msg)? {
-        return send_error(ctx, msg, CommandError::boxed("this channel isn't nsfw"));
-    }
-    send_post(ctx, msg, &post)
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    #[test]
-    fn get_random_posts() {
-        let subs = ["dankmemes", "memes", "cursedcomments"];
-        let mut passed = false;
-        for sub in subs.iter() {
-            if let Ok(_) = get_random(sub) {
-                passed = true;
-                break;
+    match get_random(&parse_sub(args)?) {
+        Ok(post) => {
+            if post.nsfw && !check_nsfw(ctx, msg)? {
+                return send_text(ctx, msg, "this channel isn't nsfw");
             }
+            send_post(ctx, msg, &post)
         }
-        assert!(passed);
-    }
-    #[test]
-    fn posts_are_random() {
-        let post1 = get_random("memes").unwrap();
-        std::thread::sleep(std::time::Duration::from_secs(1));
-        let post2 = get_random("memes").unwrap();
-        let equal = post1.title == post2.title && post1.author == post2.author;
-
-        assert!(!equal);
+        Err(err) => send_text(ctx, msg, &format!("`{}`", err)),
     }
 }

@@ -1,3 +1,4 @@
+#[derive(Debug, Clone)]
 pub struct Post {
     pub author: String,
     pub title: String,

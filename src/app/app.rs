@@ -11,7 +11,7 @@ use regex::Regex;
 
 use std::{
     collections::HashMap,
-    error,
+    env, error,
     time::{Duration, Instant},
 };
 
@@ -21,14 +21,33 @@ use diesel::sqlite::SqliteConnection;
 
 use super::commands::*;
 
-use super::helpers::*;
+use super::helpers::CONFIG;
 
 use super::models;
 use super::schema;
 
+#[derive(Debug, Clone)]
+pub struct AppError(String);
+
+impl std::fmt::Display for AppError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl error::Error for AppError {}
+
+impl From<serenity::Error> for AppError {
+    fn from(err: serenity::Error) -> Self {
+        Self(format!("error with client: {}", err))
+    }
+}
+
+pub type AppResult = Result<(), AppError>;
+
 #[group]
-#[commands(top, test, random, new, rising)]
-pub struct General;
+#[commands(top, test, random, new, rising, debug)]
+struct General;
 
 struct AppHandle;
 
@@ -44,7 +63,7 @@ impl EventHandler for AppHandle {
         }
     }
     fn reaction_add(&self, ctx: Context, reaction: Reaction) {
-        use schema::messages::dsl;
+        use schema::messages::dsl as table;
 
         let mut client_data = ctx.data.write();
         let appdata = client_data.get_mut::<AppData>().unwrap();
@@ -60,8 +79,8 @@ impl EventHandler for AppHandle {
         if appdata.client_id == msg.author.id.0 {
             if let ReactionType::Unicode(emoji) = reaction.emoji {
                 if emoji == "\u{274C}" {
-                    let results = dsl::messages
-                        .filter(dsl::msg_id.eq(msg.id.0 as i64))
+                    let results = table::messages
+                        .filter(table::msg_id.eq(*msg.id.as_u64() as i64))
                         .load::<models::Message>(&conn)
                         .expect("error getting messages from database");
 
@@ -74,14 +93,14 @@ impl EventHandler for AppHandle {
                     let cmd_msg = ctx
                         .http
                         .get_message(*msg.channel_id.as_u64(), cmd_msg_id)
-                        .unwrap();
+                        .expect("failed to get message");
 
                     if cmd_msg.author != user {
                         return;
                     }
 
-                    msg.delete(&ctx).unwrap();
-                    cmd_msg.delete(&ctx).unwrap();
+                    msg.delete(&ctx).expect("failed to delete message");
+                    cmd_msg.delete(&ctx).expect("failed to delete message");
                 }
             }
         }
@@ -117,21 +136,19 @@ impl TypeMapKey for AppData {
 pub struct App;
 
 impl App {
-    pub fn new() -> Self {
-        Self
-    }
-
     pub fn check(ctx: &mut Context, msg: &Message, _cmd_name: &str) -> bool {
-        let re = Regex::new(r"discord.gg/[a-zA-Z0-9]{6}").unwrap();
+        let re = Regex::new(r"discord.gg/[a-zA-Z0-9]{6}").expect("failed creating regex");
 
         if re.is_match(&msg.content) || msg.author.bot {
             return false;
         }
 
         let mut client_data = ctx.data.write();
-        let appdata = client_data.get_mut::<AppData>().unwrap();
+        let appdata = client_data
+            .get_mut::<AppData>()
+            .expect("failed to get appdata");
 
-        if appdata.client_id == msg.author.id.0 {
+        if appdata.client_id == *msg.author.id.as_u64() {
             return false;
         }
 
@@ -149,23 +166,31 @@ impl App {
         true
     }
 
-    pub fn start(&mut self) -> Result<(), Box<dyn error::Error>> {
-        let mgr: r2d2::ConnectionManager<SqliteConnection> =
-            r2d2::ConnectionManager::new("db.sqlite3");
+    pub fn start() -> Result<(), AppError> {
+        let mgr: r2d2::ConnectionManager<SqliteConnection> = r2d2::ConnectionManager::new(
+            env::var("DATABASE_URL").expect("no database location was specified"),
+        );
 
-        let pool = r2d2::Pool::builder().max_size(15).build(mgr)?;
+        let pool = r2d2::Pool::builder()
+            .max_size(15)
+            .build(mgr)
+            .expect("error creating database pool");
 
-        let data = load_data();
-        let mut client = Client::new(data["token"].to_string(), AppHandle)?;
+        let mut client = Client::new(
+            env::var("DISCORD_TOKEN").expect("no discord token was specified"),
+            AppHandle,
+        )?;
 
-        let prefix = data["prefix"].to_string();
+        let prefix = CONFIG["prefix"].to_string();
 
-        let cooldown_time = match data["cooldown_time"].as_u64() {
+        let cooldown_time = match CONFIG["cooldown_time"].as_u64() {
             Some(time) => time,
             None => 3,
         };
 
-        let client_id = data["client_id"].as_u64().unwrap();
+        let client_id = CONFIG["client_id"]
+            .as_u64()
+            .expect("no client id was specified");
 
         client.with_framework(
             StandardFramework::new()

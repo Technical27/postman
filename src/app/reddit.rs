@@ -1,7 +1,7 @@
 use json::JsonValue;
 use reqwest::blocking;
 
-use super::helpers::*;
+use super::helpers::CONFIG;
 
 use std::error;
 
@@ -47,7 +47,7 @@ impl From<json::JsonError> for RedditAPIError {
 
 pub fn get_reddit_api(url: &str) -> RedditResult<JsonValue> {
     let http = blocking::Client::builder()
-        .user_agent(load_data()["user_agent"].to_string())
+        .user_agent(CONFIG["user_agent"].to_string())
         .build()?;
 
     let text = http.get(url).send()?.text()?;

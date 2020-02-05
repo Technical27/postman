@@ -10,8 +10,8 @@ pub struct Message {
 impl Message {
     pub fn new(msg_id: &channel::Message, cmd_msg_id: &channel::Message) -> Self {
         Self {
-            msg_id: msg_id.id.0 as i64,
-            cmd_msg_id: cmd_msg_id.id.0 as i64,
+            msg_id: *msg_id.id.as_u64() as i64,
+            cmd_msg_id: *cmd_msg_id.id.as_u64() as i64,
         }
     }
 }

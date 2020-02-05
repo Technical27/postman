@@ -9,10 +9,10 @@ use json::JsonValue;
 
 use regex::Regex;
 
-use std::{error, fs};
+use std::fs;
 
 use super::post::Post;
-use super::reddit::RedditAPIError;
+use super::reddit::*;
 use diesel::prelude::*;
 
 use super::app::AppData;
@@ -20,12 +20,15 @@ use super::app::AppData;
 use super::models;
 use super::schema;
 
-pub fn load_data() -> JsonValue {
-    let data = json::parse(
-        &String::from_utf8(fs::read("config.json").expect("failed to load config file")).unwrap(),
-    )
-    .expect("failed to parse config file");
-    data
+lazy_static! {
+    pub static ref CONFIG: JsonValue = {
+        let data = json::parse(
+            &String::from_utf8(fs::read("config.json").expect("failed to load config file"))
+                .unwrap(),
+        )
+        .expect("failed to parse config file");
+        data
+    };
 }
 
 pub fn send_post(ctx: &mut Context, msg: &Message, post: &Post) -> CommandResult {
@@ -56,10 +59,9 @@ pub fn send_post(ctx: &mut Context, msg: &Message, post: &Post) -> CommandResult
     Ok(())
 }
 
-pub fn send_error(ctx: &mut Context, msg: &Message, err: Box<dyn error::Error>) -> CommandResult {
+pub fn send_text(ctx: &mut Context, msg: &Message, text: &str) -> CommandResult {
     msg.channel_id
-        .send_message(&ctx.http, |m| m.content(format!("`{}`", err)))?;
-    println!("error while running command: {}", err);
+        .send_message(&ctx.http, |m| m.content(text))?;
     Ok(())
 }
 
@@ -74,43 +76,70 @@ pub fn parse_sub(mut args: Args) -> Result<String, RedditAPIError> {
         return Ok(sub);
     }
 
-    Ok(load_data()["default_sub"].to_string())
+    Ok(CONFIG["default_sub"].to_string())
 }
 
-pub fn check_nsfw(ctx: &mut Context, msg: &Message) -> Result<bool, &'static str> {
+pub fn check_nsfw(ctx: &mut Context, msg: &Message) -> RedditResult<bool> {
     if let Ok(channel) = msg.channel_id.to_channel(ctx) {
         return Ok(channel.is_nsfw());
     }
-    Err("failed to check channel")
+    Err(RedditAPIError::new("failed to get channel info"))
 }
 
-pub fn parse_post(data: &JsonValue) -> Option<Post> {
+pub fn parse_post(data: &JsonValue) -> RedditResult<Post> {
     let data = &data["data"];
     if data["post_hint"] != "image"
         && data["post_hint"] != "hosted:video"
         && data["post_hint"] != "rich:video"
     {
-        return None;
+        return Err(RedditAPIError::new("post isn't and image"));
     }
 
     let author = data["author"].to_string();
     let title = data["title"].to_string();
     let permalink = data["permalink"].to_string();
-    let nsfw = data["over_18"].as_bool().unwrap();
     let image = data["url"].to_string();
 
-    Some(Post::new(&author, &title, &image, &permalink, nsfw))
+    let nsfw = match data["over_18"].as_bool() {
+        Some(value) => value,
+        None => return Err(RedditAPIError::new("failed to get nsfw info for post")),
+    };
+
+    Ok(Post::new(&author, &title, &image, &permalink, nsfw))
+}
+
+pub fn get_post(url: &str) -> RedditResult<Post> {
+    let res = get_reddit_api(url)?;
+    let mut posts = vec![];
+    if let JsonValue::Array(arr) = &res["data"]["children"] {
+        for post in arr {
+            if let Ok(post) = parse_post(post) {
+                posts.push(post);
+            }
+        }
+    }
+    if posts.len() == 0 {
+        return Err(RedditAPIError::new("no posts found"));
+    }
+    Ok(posts[0].clone())
+}
+
+pub fn handle_post(url: &str, ctx: &mut Context, msg: &Message) -> CommandResult {
+    match get_post(url) {
+        Ok(post) => {
+            if post.nsfw && !check_nsfw(ctx, msg)? {
+                return send_text(ctx, msg, "this channel isn't nsfw");
+            }
+            send_post(ctx, msg, &post)
+        }
+        Err(err) => send_text(ctx, msg, &format!("`{}`", err)),
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use serenity::framework::standard::{Args, Delimiter};
-
-    #[test]
-    fn loads_data_from_config() {
-        load_data();
-    }
 
     #[test]
     fn can_parse_valid_sub() {

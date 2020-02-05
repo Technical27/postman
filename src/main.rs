@@ -1,9 +1,17 @@
 #[macro_use]
 extern crate diesel;
 
-mod app;
+#[macro_use]
+extern crate lazy_static;
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let mut app = app::App::new();
-    app.start()
+use dotenv::dotenv;
+
+mod app;
+use app::App;
+use app::AppResult;
+
+fn main() -> AppResult {
+    dotenv().ok();
+    pretty_env_logger::init();
+    App::start()
 }
