@@ -1,30 +1,40 @@
-use serenity::{
-    client::{Client, Context, EventHandler},
-    framework::standard::{macros::group, StandardFramework},
-    model::prelude::Message,
-    model::prelude::Reaction,
-    model::prelude::ReactionType,
-    prelude::TypeMapKey,
-};
+use serenity::client::{Client, Context, EventHandler};
+use serenity::framework::standard::{macros::group, CommandResult, StandardFramework};
+use serenity::model::prelude::{Message, Reaction, ReactionType};
+use serenity::prelude::TypeMapKey;
 
-use regex::Regex;
+use json::JsonValue;
 
-use std::{
-    collections::HashMap,
-    env, error,
-    time::{Duration, Instant},
-};
+use lazy_static::lazy_static;
+
+use std::collections::HashMap;
+
+use std::{env, error, fs};
+
+use std::time::{Duration, Instant};
 
 use diesel::prelude::*;
 use diesel::r2d2;
 use diesel::sqlite::SqliteConnection;
 
-use super::commands::*;
+use log::{error, info, trace};
 
-use super::helpers::CONFIG;
+use super::commands::*;
 
 use super::models;
 use super::schema;
+
+lazy_static! {
+    pub static ref CONFIG: JsonValue = {
+        trace!("reading config");
+        let data = json::parse(
+            &String::from_utf8(fs::read("config.json").expect("failed to load config file"))
+                .unwrap(),
+        )
+        .expect("failed to parse config file");
+        data
+    };
+}
 
 #[derive(Debug, Clone)]
 pub struct AppError(String);
@@ -43,8 +53,6 @@ impl From<serenity::Error> for AppError {
     }
 }
 
-pub type AppResult = Result<(), AppError>;
-
 #[group]
 #[commands(top, test, random, new, rising, debug)]
 struct General;
@@ -52,16 +60,6 @@ struct General;
 struct AppHandle;
 
 impl EventHandler for AppHandle {
-    fn message(&self, ctx: Context, msg: Message) {
-        let re = Regex::new(r"discord.gg/[a-zA-Z0-9]{6}").unwrap();
-        if re.is_match(&msg.content) {
-            println!(
-                "found discord invite: {}\nfrom: {}",
-                msg.content, msg.author.name
-            );
-            msg.delete(ctx.http).unwrap();
-        }
-    }
     fn reaction_add(&self, ctx: Context, reaction: Reaction) {
         use schema::messages::dsl as table;
 
@@ -107,19 +105,17 @@ impl EventHandler for AppHandle {
     }
 }
 
+type DatabasePool = r2d2::Pool<r2d2::ConnectionManager<SqliteConnection>>;
+
 pub struct AppData {
     pub cooldowns: HashMap<String, Instant>,
     pub cooldown_time: Duration,
     pub client_id: u64,
-    pub db_pool: r2d2::Pool<r2d2::ConnectionManager<SqliteConnection>>,
+    pub db_pool: DatabasePool,
 }
 
 impl AppData {
-    pub fn new(
-        cooldown_time: u64,
-        client_id: u64,
-        db_pool: r2d2::Pool<r2d2::ConnectionManager<SqliteConnection>>,
-    ) -> Self {
+    pub fn new(cooldown_time: u64, client_id: u64, db_pool: DatabasePool) -> Self {
         Self {
             cooldowns: HashMap::default(),
             cooldown_time: Duration::from_secs(cooldown_time),
@@ -137,9 +133,7 @@ pub struct App;
 
 impl App {
     pub fn check(ctx: &mut Context, msg: &Message, _cmd_name: &str) -> bool {
-        let re = Regex::new(r"discord.gg/[a-zA-Z0-9]{6}").expect("failed creating regex");
-
-        if re.is_match(&msg.content) || msg.author.bot {
+        if msg.author.bot {
             return false;
         }
 
@@ -164,6 +158,12 @@ impl App {
         }
         appdata.cooldowns.insert(msg.author.tag(), Instant::now());
         true
+    }
+
+    pub fn after(_: &mut Context, _: &Message, cmd_name: &str, error: CommandResult) {
+        if let Err(err) = error {
+            error!("error while running {}: {:?}", cmd_name, err);
+        }
     }
 
     pub fn start() -> Result<(), AppError> {
@@ -196,6 +196,7 @@ impl App {
             StandardFramework::new()
                 .configure(|c| c.prefix(&prefix))
                 .before(Self::check)
+                .after(Self::after)
                 .group(&GENERAL_GROUP),
         );
 
@@ -203,6 +204,8 @@ impl App {
             let mut client_data = client.data.write();
             client_data.insert::<AppData>(AppData::new(cooldown_time, client_id, pool));
         }
+
+        info!("starting client");
 
         client.start()?;
 

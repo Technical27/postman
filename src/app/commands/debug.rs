@@ -1,19 +1,8 @@
-use serenity::{
-    client::Context,
-    framework::standard::{macros::command, CommandResult},
-    model::prelude::Message,
-};
+use serenity::client::Context;
+use serenity::framework::standard::{macros::command, CommandResult};
+use serenity::model::prelude::Message;
 
-use super::helpers::send_text;
-
-fn get_version() -> String {
-    format!(
-        "{}.{}.{}",
-        env!("CARGO_PKG_VERSION_MAJOR"),
-        env!("CARGO_PKG_VERSION_MINOR"),
-        env!("CARGO_PKG_VERSION_PATCH")
-    )
-}
+use super::helpers::{get_version, send_text};
 
 #[command]
 pub fn debug(ctx: &mut Context, msg: &Message) -> CommandResult {

@@ -1,11 +1,11 @@
-use serenity::{
-    client::Context,
-    framework::standard::{macros::command, Args, CommandResult},
-    model::prelude::Message,
-};
+use serenity::client::Context;
+use serenity::framework::standard::{macros::command, Args, CommandResult};
+use serenity::model::prelude::Message;
 
 use super::helpers::*;
+
 use super::post::Post;
+
 use super::reddit::*;
 
 fn get_random(sub: &str) -> RedditResult<Post> {

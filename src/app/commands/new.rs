@@ -1,8 +1,6 @@
-use serenity::{
-    client::Context,
-    framework::standard::{macros::command, Args, CommandResult},
-    model::prelude::Message,
-};
+use serenity::client::Context;
+use serenity::framework::standard::{macros::command, Args, CommandResult};
+use serenity::model::prelude::Message;
 
 use super::helpers::*;
 

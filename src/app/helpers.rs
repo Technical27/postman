@@ -1,35 +1,22 @@
-use serenity::{
-    client::Context,
-    framework::standard::{Args, CommandResult},
-    model::prelude::Message,
-    model::prelude::ReactionType,
-};
+use serenity::client::Context;
+use serenity::framework::standard::{Args, CommandResult};
+use serenity::model::prelude::{Message, ReactionType};
 
 use json::JsonValue;
 
 use regex::Regex;
 
-use std::fs;
-
-use super::post::Post;
-use super::reddit::*;
 use diesel::prelude::*;
 
+use super::post::Post;
+
+use super::reddit::*;
+
 use super::app::AppData;
+use super::app::CONFIG;
 
 use super::models;
 use super::schema;
-
-lazy_static! {
-    pub static ref CONFIG: JsonValue = {
-        let data = json::parse(
-            &String::from_utf8(fs::read("config.json").expect("failed to load config file"))
-                .unwrap(),
-        )
-        .expect("failed to parse config file");
-        data
-    };
-}
 
 pub fn send_post(ctx: &mut Context, msg: &Message, post: &Post) -> CommandResult {
     use schema::messages::dsl::*;
@@ -56,6 +43,7 @@ pub fn send_post(ctx: &mut Context, msg: &Message, post: &Post) -> CommandResult
         .expect("failed saving message");
 
     sent_msg.react(&ctx, ReactionType::Unicode("\u{274C}".to_string()))?;
+
     Ok(())
 }
 
@@ -65,7 +53,7 @@ pub fn send_text(ctx: &mut Context, msg: &Message, text: &str) -> CommandResult 
     Ok(())
 }
 
-pub fn parse_sub(mut args: Args) -> Result<String, RedditAPIError> {
+pub fn parse_sub(mut args: Args) -> RedditResult<String> {
     let sub_re = Regex::new(r"\b[a-zA-Z0-9]{4,20}\b").unwrap();
 
     if args.len() > 0 {
@@ -88,22 +76,24 @@ pub fn check_nsfw(ctx: &mut Context, msg: &Message) -> RedditResult<bool> {
 
 pub fn parse_post(data: &JsonValue) -> RedditResult<Post> {
     let data = &data["data"];
-    if data["post_hint"] != "image"
-        && data["post_hint"] != "hosted:video"
-        && data["post_hint"] != "rich:video"
-    {
-        return Err(RedditAPIError::new("post isn't and image"));
+
+    if data["post_hint"] != "image" && data["post_hint"] != "rich:video" {
+        return Err(RedditAPIError::new("post isn't an image"));
     }
 
     let author = data["author"].to_string();
     let title = data["title"].to_string();
     let permalink = data["permalink"].to_string();
-    let image = data["url"].to_string();
+    let mut image = data["url"].to_string();
 
     let nsfw = match data["over_18"].as_bool() {
         Some(value) => value,
         None => return Err(RedditAPIError::new("failed to get nsfw info for post")),
     };
+
+    if image.contains("gfycat.com") && data["post_hint"] == "rich:video" {
+        image = data["secure_media"]["oembed"]["thumbnail_url"].to_string();
+    }
 
     Ok(Post::new(&author, &title, &image, &permalink, nsfw))
 }
@@ -134,6 +124,15 @@ pub fn handle_post(url: &str, ctx: &mut Context, msg: &Message) -> CommandResult
         }
         Err(err) => send_text(ctx, msg, &format!("`{}`", err)),
     }
+}
+
+pub fn get_version() -> String {
+    format!(
+        "{}.{}.{}",
+        env!("CARGO_PKG_VERSION_MAJOR"),
+        env!("CARGO_PKG_VERSION_MINOR"),
+        env!("CARGO_PKG_VERSION_PATCH")
+    )
 }
 
 #[cfg(test)]
