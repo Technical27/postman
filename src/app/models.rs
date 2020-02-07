@@ -1,4 +1,7 @@
+use super::schema::guilds;
 use super::schema::messages;
+use super::schema::users;
+
 use serenity::model::channel;
 
 #[derive(Queryable, Debug, Insertable)]
@@ -14,4 +17,16 @@ impl Message {
             cmd_msg_id: *cmd_msg_id.id.as_u64() as i64,
         }
     }
+}
+
+#[derive(Queryable, Insertable, Debug)]
+pub struct Guild {
+    pub id: i64,
+}
+
+#[derive(Queryable, Insertable, Debug, Associations)]
+#[belongs_to(Guild)]
+pub struct User {
+    pub id: i64,
+    pub guild_id: i64,
 }
