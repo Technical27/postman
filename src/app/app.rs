@@ -1,5 +1,6 @@
 use serenity::client::{Client, Context, EventHandler};
 use serenity::framework::standard::{macros::group, CommandResult, StandardFramework};
+use serenity::model::gateway::Ready;
 use serenity::model::prelude::{Message, Reaction, ReactionType};
 use serenity::prelude::TypeMapKey;
 
@@ -7,7 +8,7 @@ use json::JsonValue;
 
 use lazy_static::lazy_static;
 
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 use std::{env, error, fs};
 
@@ -74,7 +75,7 @@ impl EventHandler for AppHandle {
             return;
         }
 
-        if appdata.client_id == msg.author.id.0 {
+        if appdata.client_id.expect("failed to get client_id") == msg.author.id.0 {
             if let ReactionType::Unicode(emoji) = reaction.emoji {
                 if emoji == "\u{274C}" {
                     let results = table::messages
@@ -103,23 +104,32 @@ impl EventHandler for AppHandle {
             }
         }
     }
+
+    fn ready(&self, ctx: Context, bot_data: Ready) {
+        let mut client_data = ctx.data.write();
+        let appdata = client_data.get_mut::<AppData>().unwrap();
+
+        appdata.client_id = Some(*bot_data.user.id.as_u64());
+
+        info!("logged in");
+    }
 }
 
 type DatabasePool = r2d2::Pool<r2d2::ConnectionManager<SqliteConnection>>;
 
 pub struct AppData {
-    pub cooldowns: HashMap<String, Instant>,
+    pub cooldowns: BTreeMap<String, Instant>,
     pub cooldown_time: Duration,
-    pub client_id: u64,
+    pub client_id: Option<u64>,
     pub db_pool: DatabasePool,
 }
 
 impl AppData {
-    pub fn new(cooldown_time: u64, client_id: u64, db_pool: DatabasePool) -> Self {
+    pub fn new(cooldown_time: u64, db_pool: DatabasePool) -> Self {
         Self {
-            cooldowns: HashMap::default(),
+            cooldowns: BTreeMap::new(),
             cooldown_time: Duration::from_secs(cooldown_time),
-            client_id,
+            client_id: None,
             db_pool,
         }
     }
@@ -142,7 +152,7 @@ impl App {
             .get_mut::<AppData>()
             .expect("failed to get appdata");
 
-        if appdata.client_id == *msg.author.id.as_u64() {
+        if appdata.client_id.expect("failed to get client_id") == *msg.author.id.as_u64() {
             return false;
         }
 
@@ -188,10 +198,6 @@ impl App {
             None => 3,
         };
 
-        let client_id = CONFIG["client_id"]
-            .as_u64()
-            .expect("no client id was specified");
-
         client.with_framework(
             StandardFramework::new()
                 .configure(|c| c.prefix(&prefix))
@@ -202,7 +208,7 @@ impl App {
 
         {
             let mut client_data = client.data.write();
-            client_data.insert::<AppData>(AppData::new(cooldown_time, client_id, pool));
+            client_data.insert::<AppData>(AppData::new(cooldown_time, pool));
         }
 
         info!("starting client");

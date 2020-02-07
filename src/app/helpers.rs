@@ -6,6 +6,8 @@ use json::JsonValue;
 
 use regex::Regex;
 
+use log::trace;
+
 use diesel::prelude::*;
 
 use super::post::Post;
@@ -95,15 +97,20 @@ pub fn parse_post(data: &JsonValue) -> RedditResult<Post> {
         image = data["secure_media"]["oembed"]["thumbnail_url"].to_string();
     }
 
+    trace!("sending url: {}", image);
+
     Ok(Post::new(&author, &title, &image, &permalink, nsfw))
 }
 
-pub fn get_post(url: &str) -> RedditResult<Post> {
+pub fn get_post(url: &str, nsfw: bool) -> RedditResult<Post> {
     let res = get_reddit_api(url)?;
     let mut posts = vec![];
     if let JsonValue::Array(arr) = &res["data"]["children"] {
         for post in arr {
             if let Ok(post) = parse_post(post) {
+                if post.nsfw && !nsfw {
+                    continue;
+                }
                 posts.push(post);
             }
         }
@@ -115,13 +122,8 @@ pub fn get_post(url: &str) -> RedditResult<Post> {
 }
 
 pub fn handle_post(url: &str, ctx: &mut Context, msg: &Message) -> CommandResult {
-    match get_post(url) {
-        Ok(post) => {
-            if post.nsfw && !check_nsfw(ctx, msg)? {
-                return send_text(ctx, msg, "this channel isn't nsfw");
-            }
-            send_post(ctx, msg, &post)
-        }
+    match get_post(url, check_nsfw(ctx, msg)?) {
+        Ok(post) => send_post(ctx, msg, &post),
         Err(err) => send_text(ctx, msg, &format!("`{}`", err)),
     }
 }

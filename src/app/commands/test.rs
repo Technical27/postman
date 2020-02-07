@@ -1,5 +1,5 @@
 use serenity::client::Context;
-use serenity::framework::standard::{macros::command, Args, CommandResult};
+use serenity::framework::standard::{macros::command, CommandResult};
 use serenity::model::prelude::Message;
 
 #[command]

@@ -8,7 +8,7 @@ use super::post::Post;
 
 use super::reddit::*;
 
-fn get_random(sub: &str) -> RedditResult<Post> {
+fn get_random(sub: &str, nsfw: bool) -> RedditResult<Post> {
     let mut i = 0;
 
     let post = loop {
@@ -17,6 +17,10 @@ fn get_random(sub: &str) -> RedditResult<Post> {
         }
         let res = get_reddit_api(&format!("https://reddit.com/r/{}/random.json", sub))?;
         if let Ok(post) = parse_post(&res[0]["data"]["children"][0]) {
+            if post.nsfw && !nsfw {
+                i += 1;
+                continue;
+            }
             break post;
         }
         i += 1;
@@ -27,13 +31,8 @@ fn get_random(sub: &str) -> RedditResult<Post> {
 
 #[command]
 pub fn random(ctx: &mut Context, msg: &Message, args: Args) -> CommandResult {
-    match get_random(&parse_sub(args)?) {
-        Ok(post) => {
-            if post.nsfw && !check_nsfw(ctx, msg)? {
-                return send_text(ctx, msg, "this channel isn't nsfw");
-            }
-            send_post(ctx, msg, &post)
-        }
+    match get_random(&parse_sub(args)?, check_nsfw(ctx, msg)?) {
+        Ok(post) => send_post(ctx, msg, &post),
         Err(err) => send_text(ctx, msg, &format!("`{}`", err)),
     }
 }
