@@ -152,10 +152,6 @@ impl App {
             .get_mut::<AppData>()
             .expect("failed to get appdata");
 
-        if appdata.client_id.expect("failed to get client_id") == *msg.author.id.as_u64() {
-            return false;
-        }
-
         if let Some(ptime) = appdata.cooldowns.get(&msg.author.tag()) {
             if ptime.elapsed() < appdata.cooldown_time {
                 msg.channel_id
