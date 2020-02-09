@@ -21,7 +21,6 @@ use diesel::sqlite::SqliteConnection;
 use log::{error, info, trace};
 
 use super::commands::*;
-
 use super::models;
 use super::schema;
 

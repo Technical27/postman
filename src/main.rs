@@ -8,6 +8,13 @@ use dotenv::dotenv;
 use std::env;
 
 mod app;
+mod commands;
+mod helpers;
+mod models;
+mod post;
+mod reddit;
+mod schema;
+
 use app::App;
 
 fn main() {
