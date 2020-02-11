@@ -1,6 +1,4 @@
-use super::schema::guilds;
-use super::schema::messages;
-use super::schema::users;
+use super::schema::*;
 
 use serenity::model::channel;
 
@@ -28,5 +26,13 @@ pub struct Guild {
 #[belongs_to(Guild)]
 pub struct User {
     pub id: i64,
+    pub guild_id: i64,
+}
+
+#[derive(Queryable, Insertable, Debug, Associations)]
+#[belongs_to(Guild)]
+#[belongs_to(User)]
+pub struct Guilduser {
+    pub user_id: i64,
     pub guild_id: i64,
 }
