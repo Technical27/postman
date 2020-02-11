@@ -25,6 +25,7 @@ pub struct Guild {
 #[derive(Queryable, Insertable, Debug)]
 pub struct User {
     pub id: i64,
+    pub rank: i64,
 }
 
 #[derive(Queryable, Insertable, Debug, Associations)]

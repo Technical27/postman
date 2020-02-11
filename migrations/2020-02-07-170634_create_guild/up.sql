@@ -3,7 +3,8 @@ create table guilds (
 );
 
 create table users (
-  id bigint not null primary key
+  id bigint not null primary key,
+  rank bigint default 0
 );
 
 create table guildusers (
