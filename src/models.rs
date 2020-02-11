@@ -22,11 +22,9 @@ pub struct Guild {
     pub id: i64,
 }
 
-#[derive(Queryable, Insertable, Debug, Associations)]
-#[belongs_to(Guild)]
+#[derive(Queryable, Insertable, Debug)]
 pub struct User {
     pub id: i64,
-    pub guild_id: i64,
 }
 
 #[derive(Queryable, Insertable, Debug, Associations)]

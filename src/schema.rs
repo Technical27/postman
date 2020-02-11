@@ -21,7 +21,6 @@ table! {
 table! {
     users (id) {
         id -> BigInt,
-        guild_id -> BigInt,
     }
 }
 
