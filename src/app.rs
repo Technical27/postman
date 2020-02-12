@@ -168,10 +168,7 @@ impl App {
 
         let prefix = CONFIG["prefix"].to_string();
 
-        let cooldown_time = match CONFIG["cooldown_time"].as_u64() {
-            Some(time) => time,
-            None => 3,
-        };
+        let cooldown_time = CONFIG["cooldown_time"].as_u64().unwrap_or(3);
 
         client.with_framework(
             StandardFramework::new()
