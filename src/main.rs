@@ -9,6 +9,7 @@ use std::env;
 
 mod app;
 mod commands;
+mod events;
 mod helpers;
 mod models;
 mod post;
@@ -18,9 +19,13 @@ mod schema;
 use app::App;
 
 fn main() {
-    env::set_var("POSTMAN_LOG", "info");
     dotenv().ok();
-    pretty_env_logger::init_custom_env("POSTMAN_LOG");
+
+    if let Err(_) = env::var("RUST_LOG") {
+        env::set_var("RUST_LOG", "postman=trace");
+    }
+
+    pretty_env_logger::init();
     if let Err(err) = App::start() {
         error!("{}", err);
     }

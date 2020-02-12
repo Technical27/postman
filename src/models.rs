@@ -28,10 +28,28 @@ pub struct User {
     pub rank: i64,
 }
 
+impl User {
+    pub fn new(id: u64) -> Self {
+        Self {
+            id: id as i64,
+            rank: 0,
+        }
+    }
+}
+
 #[derive(Queryable, Insertable, Debug, Associations)]
 #[belongs_to(Guild)]
 #[belongs_to(User)]
 pub struct Guilduser {
     pub user_id: i64,
     pub guild_id: i64,
+}
+
+impl Guilduser {
+    pub fn new(guild_id: u64, user_id: u64) -> Self {
+        Self {
+            guild_id: guild_id as i64,
+            user_id: user_id as i64,
+        }
+    }
 }

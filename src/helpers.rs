@@ -49,7 +49,7 @@ pub fn send_post(ctx: &mut Context, msg: &Message, post: &Post) -> CommandResult
     Ok(())
 }
 
-pub fn send_text(ctx: &mut Context, msg: &Message, text: &str) -> CommandResult {
+pub fn send_text(ctx: &Context, msg: &Message, text: &str) -> CommandResult {
     msg.channel_id
         .send_message(&ctx.http, |m| m.content(text))?;
     Ok(())
@@ -97,8 +97,6 @@ pub fn parse_post(data: &JsonValue) -> RedditResult<Post> {
         image = data["secure_media"]["oembed"]["thumbnail_url"].to_string();
     }
 
-    trace!("sending url: {}", image);
-
     Ok(Post::new(&author, &title, &image, &permalink, nsfw))
 }
 
@@ -118,6 +116,9 @@ pub fn get_post(url: &str, nsfw: bool) -> RedditResult<Post> {
     if posts.len() == 0 {
         return Err(RedditAPIError::new("no posts found"));
     }
+
+    trace!("sending post: {:?}", posts[0]);
+
     Ok(posts[0].clone())
 }
 

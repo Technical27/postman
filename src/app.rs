@@ -1,7 +1,6 @@
-use serenity::client::{Client, Context, EventHandler};
+use serenity::client::{Client, Context};
 use serenity::framework::standard::{macros::group, CommandResult, StandardFramework};
-use serenity::model::gateway::Ready;
-use serenity::model::prelude::{Message, Reaction, ReactionType};
+use serenity::model::prelude::Message;
 use serenity::prelude::TypeMapKey;
 
 use json::JsonValue;
@@ -21,6 +20,8 @@ use diesel::sqlite::SqliteConnection;
 use log::{error, info, trace};
 
 use super::commands::*;
+use super::events::AppHandle;
+use super::helpers::send_text;
 use super::models;
 use super::schema;
 
@@ -56,63 +57,6 @@ impl From<serenity::Error> for AppError {
 #[group]
 #[commands(top, test, random, new, rising, debug)]
 struct General;
-
-struct AppHandle;
-
-impl EventHandler for AppHandle {
-    fn reaction_add(&self, ctx: Context, reaction: Reaction) {
-        use schema::messages::dsl as table;
-
-        let mut client_data = ctx.data.write();
-        let appdata = client_data.get_mut::<AppData>().unwrap();
-        let conn = appdata.db_pool.get().unwrap();
-
-        let msg = reaction.message(&ctx.http).unwrap();
-        let user = reaction.user(&ctx).unwrap();
-
-        if !msg.author.bot || user.bot {
-            return;
-        }
-
-        if appdata.client_id.expect("failed to get client_id") == msg.author.id.0 {
-            if let ReactionType::Unicode(emoji) = reaction.emoji {
-                if emoji == "\u{274C}" {
-                    let results = table::messages
-                        .filter(table::msg_id.eq(*msg.id.as_u64() as i64))
-                        .load::<models::Message>(&conn)
-                        .expect("error getting messages from database");
-
-                    if results.len() < 1 {
-                        return;
-                    }
-
-                    let cmd_msg_id = results[0].cmd_msg_id as u64;
-
-                    let cmd_msg = ctx
-                        .http
-                        .get_message(*msg.channel_id.as_u64(), cmd_msg_id)
-                        .expect("failed to get message");
-
-                    if cmd_msg.author != user {
-                        return;
-                    }
-
-                    msg.delete(&ctx).expect("failed to delete message");
-                    cmd_msg.delete(&ctx).expect("failed to delete message");
-                }
-            }
-        }
-    }
-
-    fn ready(&self, ctx: Context, bot_data: Ready) {
-        let mut client_data = ctx.data.write();
-        let appdata = client_data.get_mut::<AppData>().unwrap();
-
-        appdata.client_id = Some(*bot_data.user.id.as_u64());
-
-        info!("logged in");
-    }
-}
 
 type DatabasePool = r2d2::Pool<r2d2::ConnectionManager<SqliteConnection>>;
 
@@ -153,15 +97,51 @@ impl App {
 
         if let Some(ptime) = appdata.cooldowns.get(&msg.author.tag()) {
             if ptime.elapsed() < appdata.cooldown_time {
-                msg.channel_id
-                    .send_message(&ctx.http, |m| {
-                        m.content("`please wait a bit before doing any command`")
-                    })
-                    .unwrap();
+                send_text(ctx, msg, "`please wait a bit before doing any command`").unwrap();
                 return false;
             }
         }
         appdata.cooldowns.insert(msg.author.tag(), Instant::now());
+
+        let conn = appdata.db_pool.get().unwrap();
+
+        use schema::users::dsl::*;
+
+        let res = users
+            .filter(id.eq(*msg.author.id.as_u64() as i64))
+            .first::<models::User>(&conn);
+
+        match res {
+            Ok(user) => {
+                trace!("updating user {} to rank {}", msg.author.id, user.rank + 1);
+                diesel::update(users)
+                    .set(rank.eq(user.rank + 1))
+                    .execute(&conn)
+                    .expect("failed updating rank");
+            }
+            Err(diesel::NotFound) => {
+                diesel::insert_into(users)
+                    .values(models::User::new(*msg.author.id.as_u64()))
+                    .execute(&conn)
+                    .expect("failed to save a user");
+
+                use schema::guildusers::dsl::*;
+
+                diesel::insert_into(guildusers)
+                    .values(models::Guilduser::new(
+                        *msg.guild_id.unwrap().as_u64(),
+                        *msg.author.id.as_u64(),
+                    ))
+                    .execute(&conn)
+                    .expect("failed to save guilduser");
+
+                send_text(ctx, msg, "you used me for the first time!").unwrap();
+            }
+            Err(e) => {
+                error!("failed to get user from database: {}", e);
+            }
+        }
+
         true
     }
 

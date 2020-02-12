@@ -4,7 +4,7 @@ create table guilds (
 
 create table users (
   id bigint not null primary key,
-  rank bigint default 0
+  rank bigint not null
 );
 
 create table guildusers (

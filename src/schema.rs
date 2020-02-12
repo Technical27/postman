@@ -21,7 +21,7 @@ table! {
 table! {
     users (id) {
         id -> BigInt,
-        rank -> Nullable<BigInt>,
+        rank -> BigInt,
     }
 }
 
