@@ -33,7 +33,7 @@ pub fn send_post(ctx: &mut Context, msg: &Message, post: &Post) -> CommandResult
             });
             e.image(&post.image);
             e.url(post.post_url());
-            e.footer(|f| f.text(format!("upvotes: {}, downvotes: {}", post.ups, post.downs)))
+            e.footer(|f| f.text(format!("{} upvotes", post.ups)))
         })
     })?;
 
@@ -104,10 +104,9 @@ pub fn parse_post(data: &JsonValue) -> RedditResult<Post> {
     }
 
     let ups = data["ups"].as_u64().unwrap();
-    let downs = data["downs"].as_u64().unwrap();
 
     Ok(Post::new(
-        &author, &title, &image, &permalink, nsfw, ups, downs,
+        &author, &title, &image, &permalink, nsfw, ups
     ))
 }
 
