@@ -22,6 +22,7 @@ pub struct Guild {
     pub id: i64,
 }
 
+// model to represent a user on discord
 #[derive(Queryable, Insertable, Debug)]
 pub struct User {
     pub id: i64,
@@ -37,6 +38,7 @@ impl User {
     }
 }
 
+// model to link Guild and User together
 #[derive(Queryable, Insertable, Debug, Associations)]
 #[belongs_to(Guild)]
 #[belongs_to(User)]

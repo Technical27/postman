@@ -5,6 +5,8 @@ use serenity::model::prelude::Message;
 use std::thread;
 use std::time::Duration;
 
+use log::trace;
+
 use super::helpers::*;
 use super::post::Post;
 use super::reddit::*;
@@ -19,6 +21,7 @@ fn get_random(sub: &str, nsfw: bool, tries: u8) -> RedditResult<Post> {
         if post.nsfw && !nsfw {
             return get_random(sub, nsfw, tries + 1);
         }
+        trace!("sending post: {:?}", post);
         return Ok(post);
     }
     return get_random(sub, nsfw, tries + 1);

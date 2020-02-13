@@ -20,6 +20,7 @@ use super::app::CONFIG;
 use super::models;
 use super::schema;
 
+// helper method to send a post on discord
 pub fn send_post(ctx: &mut Context, msg: &Message, post: &Post) -> CommandResult {
     use schema::messages::dsl::*;
 
@@ -31,7 +32,8 @@ pub fn send_post(ctx: &mut Context, msg: &Message, post: &Post) -> CommandResult
                 a.url(post.author_url())
             });
             e.image(&post.image);
-            e.url(post.post_url())
+            e.url(post.post_url());
+            e.footer(|f| f.text(format!("upvotes: {}, downvotes: {}", post.ups, post.downs)))
         })
     })?;
 
@@ -49,12 +51,14 @@ pub fn send_post(ctx: &mut Context, msg: &Message, post: &Post) -> CommandResult
     Ok(())
 }
 
+// helper method to send a pure text message on discord
 pub fn send_text(ctx: &Context, msg: &Message, text: &str) -> CommandResult {
     msg.channel_id
         .send_message(&ctx.http, |m| m.content(text))?;
     Ok(())
 }
 
+// parses command arguments and returns a subreddit name
 pub fn parse_sub(mut args: Args) -> RedditResult<String> {
     let sub_re = Regex::new(r"\b[a-zA-Z0-9]{4,20}\b").unwrap();
 
@@ -69,13 +73,15 @@ pub fn parse_sub(mut args: Args) -> RedditResult<String> {
     Ok(CONFIG["default_sub"].to_string())
 }
 
+// helper to check if a discord channel is nsfw
 pub fn check_nsfw(ctx: &mut Context, msg: &Message) -> RedditResult<bool> {
-    if let Ok(channel) = msg.channel_id.to_channel(ctx) {
-        return Ok(channel.is_nsfw());
+    match msg.channel_id.to_channel(ctx) {
+        Ok(channel) => Ok(channel.is_nsfw()),
+        Err(_) => Err(RedditAPIError::new("failed to get channel info")),
     }
-    Err(RedditAPIError::new("failed to get channel info"))
 }
 
+// turns raw json into a Post object
 pub fn parse_post(data: &JsonValue) -> RedditResult<Post> {
     let data = &data["data"];
 
@@ -97,9 +103,15 @@ pub fn parse_post(data: &JsonValue) -> RedditResult<Post> {
         image = data["secure_media"]["oembed"]["thumbnail_url"].to_string();
     }
 
-    Ok(Post::new(&author, &title, &image, &permalink, nsfw))
+    let ups = data["ups"].as_u64().unwrap();
+    let downs = data["downs"].as_u64().unwrap();
+
+    Ok(Post::new(
+        &author, &title, &image, &permalink, nsfw, ups, downs,
+    ))
 }
 
+// method to get a post on reddit from a list endpoint
 pub fn get_post(url: &str, nsfw: bool) -> RedditResult<Post> {
     let res = get_reddit_api(url)?;
     let mut posts = vec![];
@@ -122,6 +134,7 @@ pub fn get_post(url: &str, nsfw: bool) -> RedditResult<Post> {
     Ok(posts[0].clone())
 }
 
+// gets and sends a post
 pub fn handle_post(url: &str, ctx: &mut Context, msg: &Message) -> CommandResult {
     match get_post(url, check_nsfw(ctx, msg)?) {
         Ok(post) => send_post(ctx, msg, &post),
@@ -129,6 +142,7 @@ pub fn handle_post(url: &str, ctx: &mut Context, msg: &Message) -> CommandResult
     }
 }
 
+// convenience for getting the current version
 pub fn get_version() -> String {
     format!(
         "{}.{}.{}",
