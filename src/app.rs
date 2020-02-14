@@ -35,6 +35,7 @@ lazy_static! {
         .expect("failed to parse config file");
         data
     };
+    pub static ref ADMIN_COMMANDS: Vec<&'static str> = { vec!["test", "debug"] };
 }
 
 #[derive(Debug, Clone)]
@@ -85,8 +86,14 @@ impl TypeMapKey for AppData {
 pub struct App;
 
 impl App {
-    pub fn check(ctx: &mut Context, msg: &Message, _cmd_name: &str) -> bool {
+    pub fn check(ctx: &mut Context, msg: &Message, cmd_name: &str) -> bool {
         if msg.author.bot {
+            return false;
+        }
+
+        if ADMIN_COMMANDS.contains(&cmd_name)
+            && CONFIG["admin"].as_u64().unwrap() != *msg.author.id.as_u64()
+        {
             return false;
         }
 
