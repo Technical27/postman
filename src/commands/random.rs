@@ -28,6 +28,11 @@ fn get_random(sub: &str, nsfw: bool, tries: u8) -> RedditResult<Post> {
 }
 
 #[command]
+#[description("gets a random post from a sub")]
+#[usage("random [sub]")]
+#[example("random cursedcomments")]
+#[example("random")]
+#[max_args(1)]
 pub fn random(ctx: &mut Context, msg: &Message, args: Args) -> CommandResult {
     match get_random(&parse_sub(args)?, check_nsfw(ctx, msg)?, 1) {
         Ok(post) => send_post(ctx, msg, &post),

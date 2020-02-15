@@ -8,6 +8,7 @@ use super::helpers::{get_version, parse_post, send_post, send_text};
 use super::reddit::get_reddit_api;
 
 #[command]
+#[help_available(false)]
 pub fn debug(ctx: &mut Context, msg: &Message, mut args: Args) -> CommandResult {
     match args.single_quoted::<String>() {
         Ok(arg) => {

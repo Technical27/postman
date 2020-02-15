@@ -57,6 +57,7 @@ impl From<serenity::Error> for AppError {
 
 #[group]
 #[commands(top, test, random, new, rising, debug)]
+#[help_available]
 struct General;
 
 type DatabasePool = r2d2::Pool<r2d2::ConnectionManager<SqliteConnection>>;
