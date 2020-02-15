@@ -51,7 +51,11 @@ pub fn get_reddit_api(url: &str) -> RedditResult<JsonValue> {
         .user_agent(USER_AGENT.as_str())
         .build()?;
 
-    let text = http.get(url).send()?.text()?;
+    let res = http.get(url).send()?;
+
+    trace!("got response: {:?}", res);
+
+    let text = res.text()?;
 
     Ok(json::parse(&text)?)
 }
