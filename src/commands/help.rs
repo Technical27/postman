@@ -49,6 +49,9 @@ pub fn help(
             let mut cmds = vec![];
             for group in groups {
                 for cmd in group.options.commands {
+                    if !cmd.options.help_available {
+                        continue;
+                    }
                     cmds.push(cmd.options.names[0]);
                 }
             }
