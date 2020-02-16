@@ -45,7 +45,18 @@ pub fn help(
                 }
             }
         }
-        Err(_) => {}
+        Err(_) => {
+            let mut cmds = vec![];
+            for group in groups {
+                for cmd in group.options.commands {
+                    cmds.push(cmd.options.names[0]);
+                }
+            }
+
+            msg.channel_id.send_message(&ctx.http, |m| {
+                m.embed(|e| e.field("available commands", cmds.join(", "), false))
+            })?;
+        }
     }
     Ok(())
 }
