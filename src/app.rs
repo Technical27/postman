@@ -183,7 +183,8 @@ impl App {
                 .configure(|c| c.prefix(&prefix))
                 .before(Self::check)
                 .after(Self::after)
-                .group(&GENERAL_GROUP),
+                .group(&GENERAL_GROUP)
+                .help(&HELP),
         );
 
         {
