@@ -53,8 +53,6 @@ pub fn get_reddit_api(url: &str) -> RedditResult<JsonValue> {
 
     let res = http.get(url).send()?;
 
-    trace!("got response: {:?}", res);
-
     let text = res.text()?;
 
     Ok(json::parse(&text)?)
