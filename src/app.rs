@@ -111,6 +111,10 @@ impl App {
         }
         appdata.cooldowns.insert(msg.author.tag(), Instant::now());
 
+        if cmd_name == "help" {
+            return true;
+        }
+
         let conn = appdata.db_pool.get().unwrap();
 
         use schema::users::dsl::*;
