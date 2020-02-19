@@ -1,3 +1,3 @@
-drop table guilds;
-drop table users;
-drop table guildusers;
+drop table guilds cascade;
+drop table users cascade;
+drop table guildusers cascade;

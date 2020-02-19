@@ -13,9 +13,9 @@ use std::{env, error, fs};
 
 use std::time::{Duration, Instant};
 
+use diesel::pg::PgConnection;
 use diesel::prelude::*;
 use diesel::r2d2;
-use diesel::sqlite::SqliteConnection;
 
 use log::{error, info, trace};
 
@@ -60,7 +60,7 @@ impl From<serenity::Error> for AppError {
 #[help_available]
 struct General;
 
-type DatabasePool = r2d2::Pool<r2d2::ConnectionManager<SqliteConnection>>;
+type DatabasePool = r2d2::Pool<r2d2::ConnectionManager<PgConnection>>;
 
 pub struct AppData {
     pub cooldowns: BTreeMap<String, Instant>,
@@ -117,42 +117,8 @@ impl App {
 
         let conn = appdata.db_pool.get().unwrap();
 
-        use schema::users::dsl::*;
-
-        let res = users
-            .filter(id.eq(*msg.author.id.as_u64() as i64))
-            .first::<models::User>(&conn);
-
-        match res {
-            Ok(user) => {
-                trace!("updating user {} to rank {}", msg.author.id, user.rank + 1);
-                diesel::update(users)
-                    .set(rank.eq(user.rank + 1))
-                    .execute(&conn)
-                    .expect("failed updating rank");
-            }
-            Err(diesel::NotFound) => {
-                diesel::insert_into(users)
-                    .values(models::User::new(*msg.author.id.as_u64()))
-                    .execute(&conn)
-                    .expect("failed to save a user");
-
-                use schema::guildusers::dsl::*;
-
-                diesel::insert_into(guildusers)
-                    .values(models::Guilduser::new(
-                        *msg.guild_id.unwrap().as_u64(),
-                        *msg.author.id.as_u64(),
-                    ))
-                    .execute(&conn)
-                    .expect("failed to save guilduser");
-
-                send_text(ctx, msg, "you used me for the first time!").unwrap();
-            }
-            Err(e) => {
-                error!("failed to get user from database: {}", e);
-            }
-        }
+        update_guild(msg, &conn);
+        update_user(ctx, msg, &conn);
 
         true
     }
@@ -164,7 +130,7 @@ impl App {
     }
 
     pub fn start() -> Result<(), AppError> {
-        let mgr: r2d2::ConnectionManager<SqliteConnection> = r2d2::ConnectionManager::new(
+        let mgr: r2d2::ConnectionManager<PgConnection> = r2d2::ConnectionManager::new(
             env::var("DATABASE_URL").expect("no database location was specified"),
         );
 
@@ -201,5 +167,62 @@ impl App {
         client.start()?;
 
         Ok(())
+    }
+}
+
+fn update_guild(msg: &Message, conn: &PgConnection) {
+    use schema::guilds::dsl::*;
+
+    let guild_id = *msg.guild_id.unwrap().as_u64();
+
+    let res = guilds
+        .filter(id.eq(guild_id as i64))
+        .first::<models::Guild>(conn);
+
+    if let Err(diesel::NotFound) = res {
+        trace!("creating guild with id: {}", guild_id as i64);
+        diesel::insert_into(guilds)
+            .values(models::Guild::new(guild_id))
+            .execute(conn)
+            .expect("failed creating guild");
+    }
+}
+
+fn update_user(ctx: &Context, msg: &Message, conn: &PgConnection) {
+    use schema::users::dsl::*;
+
+    let res = users
+        .filter(id.eq(*msg.author.id.as_u64() as i64))
+        .first::<models::User>(conn);
+
+    match res {
+        Ok(user) => {
+            trace!("updating user {} to rank {}", msg.author.id, user.rank + 1);
+            diesel::update(users)
+                .set(rank.eq(user.rank + 1))
+                .execute(conn)
+                .expect("failed updating rank");
+        }
+        Err(diesel::NotFound) => {
+            diesel::insert_into(users)
+                .values(models::User::new(*msg.author.id.as_u64()))
+                .execute(conn)
+                .expect("failed to save a user");
+
+            use schema::guildusers::dsl::*;
+
+            diesel::insert_into(guildusers)
+                .values(models::Guilduser::new(
+                    *msg.guild_id.unwrap().as_u64(),
+                    *msg.author.id.as_u64(),
+                ))
+                .execute(conn)
+                .expect("failed to save guilduser");
+
+            send_text(ctx, msg, "you used me for the first time!").unwrap();
+        }
+        Err(e) => {
+            error!("failed to get user from database: {}", e);
+        }
     }
 }
