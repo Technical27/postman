@@ -8,6 +8,8 @@ use regex::Regex;
 
 use log::trace;
 
+use lazy_static::lazy_static;
+
 use diesel::prelude::*;
 
 use super::post::Post;
@@ -58,13 +60,15 @@ pub fn send_text(ctx: &Context, msg: &Message, text: &str) -> CommandResult {
     Ok(())
 }
 
+lazy_static! {
+    static ref SUB_REGEX: Regex = { Regex::new(r"\b[a-zA-Z0-9]{4,20}\b").unwrap() };
+}
+
 // parses command arguments and returns a subreddit name
 pub fn parse_sub(mut args: Args) -> RedditResult<String> {
-    let sub_re = Regex::new(r"\b[a-zA-Z0-9]{4,20}\b").unwrap();
-
     if args.len() > 0 {
         let sub = args.single::<String>().unwrap();
-        if !sub_re.is_match(&sub) {
+        if !SUB_REGEX.is_match(&sub) {
             return Err(RedditAPIError::new("invalid subreddit name"));
         }
         return Ok(sub);
@@ -105,9 +109,7 @@ pub fn parse_post(data: &JsonValue) -> RedditResult<Post> {
 
     let ups = data["ups"].as_u64().unwrap();
 
-    Ok(Post::new(
-        &author, &title, &image, &permalink, nsfw, ups
-    ))
+    Ok(Post::new(&author, &title, &image, &permalink, nsfw, ups))
 }
 
 // method to get a post on reddit from a list endpoint
