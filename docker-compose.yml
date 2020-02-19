@@ -1,4 +1,14 @@
 version: '3'
 services:
+  database:
+    image: "postgres:latest"
+    environment:
+      POSTGRES_DB: postmandb
+      POSTGRES_PASSWORD: postman
+      POSTGRES_USER: postman
   bot:
     build: .
+    environment:
+      DATABASE_URL: postgres://postman:postman@database/postmandb
+    depends_on:
+      - database
