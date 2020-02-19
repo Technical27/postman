@@ -22,6 +22,12 @@ pub struct Guild {
     pub id: i64,
 }
 
+impl Guild {
+    pub fn new(id: u64) -> Self {
+        Self { id: id as i64 }
+    }
+}
+
 // model to represent a user on discord
 #[derive(Queryable, Insertable, Debug)]
 pub struct User {
