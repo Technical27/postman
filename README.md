@@ -1,4 +1,6 @@
 # postman
+![Cargo CI](https://github.com/Technical27/postman/workflows/Cargo%20CI/badge.svg)
+![Docker CI](https://github.com/Technical27/postman/workflows/Docker%20CI/badge.svg)
 
 a discord bot that gets images from reddit. simple.
 
