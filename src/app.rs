@@ -35,8 +35,10 @@ lazy_static! {
         .expect("failed to parse config file");
         data
     };
-    pub static ref ADMIN_COMMANDS: Vec<&'static str> = { vec!["test", "debug"] };
 }
+
+static ADMIN_COMMANDS: &[&str] = &["test", "debug"];
+static MAIN_COMMANDS: &[&str] = &["new", "top", "random", "rising"];
 
 #[derive(Debug, Clone)]
 pub struct AppError(String);
@@ -56,7 +58,7 @@ impl From<serenity::Error> for AppError {
 }
 
 #[group]
-#[commands(top, test, random, new, rising, debug)]
+#[commands(top, test, random, new, rising, debug, stats)]
 #[help_available]
 struct General;
 
@@ -111,7 +113,7 @@ impl App {
         }
         appdata.cooldowns.insert(msg.author.tag(), Instant::now());
 
-        if cmd_name == "help" {
+        if !MAIN_COMMANDS.contains(&cmd_name) {
             return true;
         }
 
