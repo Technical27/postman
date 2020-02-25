@@ -11,7 +11,14 @@ pub struct Post {
 }
 
 impl Post {
-    pub fn new(author: &str, title: &str, image: &str, permalink: &str, nsfw: bool, ups: u64) -> Self {
+    pub fn new(
+        author: &str,
+        title: &str,
+        image: &str,
+        permalink: &str,
+        nsfw: bool,
+        ups: u64,
+    ) -> Self {
         Self {
             author: author.to_string(),
             title: title.to_string(),

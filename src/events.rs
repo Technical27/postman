@@ -1,5 +1,5 @@
 use serenity::client::{Context, EventHandler};
-use serenity::model::gateway::Ready;
+use serenity::model::gateway::{Activity, Ready};
 use serenity::model::prelude::{Reaction, ReactionType};
 
 use log::{error, info};
@@ -66,6 +66,8 @@ impl EventHandler for AppHandle {
         let appdata = client_data.get_mut::<AppData>().unwrap();
 
         appdata.client_id = Some(*bot_data.user.id.as_u64());
+
+        ctx.set_activity(Activity::playing("-help"));
 
         info!("logged in");
     }
