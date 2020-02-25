@@ -5,7 +5,7 @@
 a discord bot that gets images from reddit. simple.
 
 ## building
-
+### config files
 first, create a `.env` file that has 2 keys: a `DISCORD_TOKEN` and `DATABASE_URL`.
 
 `DISCORD_TOKEN` is your discord token and `DATABASE_URL` is the location of a postgres database.
@@ -14,6 +14,23 @@ first, create a `.env` file that has 2 keys: a `DISCORD_TOKEN` and `DATABASE_URL
 DISCORD_TOKEN=your.token.here
 DATABASE_URL=postgres://user:pass@hostname:port/database
 ```
+
+then, create a `config.json` with these properties:
+  - `default_sub` - the default subreddit that will be used if the user doesn't specify one
+  - `admin` - the discord id of the bot admin (used to allow access to admin commands)
+  - `cooldown_time` - the cooldown time between commands
+  - `prefix` - the prefix that the bot will use
+
+example:
+```json
+{
+  "default_sub": "memes",
+  "admin": 99999999999,
+  "cooldown_time": 3,
+  "prefix": "~"
+}
+```
+
 ### manual build
 
 install the `diesel` cli
