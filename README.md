@@ -77,19 +77,6 @@ run
 $ docker-compose up -d
 ```
 
-find the bot image name
-```bash
-$ sudo docker-compose ps
-       Name                     Command              State    Ports
----------------------------------------------------------------------
-postman_bot_1        postman                         Up
-postman_database_1   docker-entrypoint.sh postgres   Up      5432/tcp
-```
-and run migrations
-```bash
-$ sudo docker exec postman_bot_1 /bin/bash -c "diesel migration run"
-```
-
 ## backing up the database
 ### docker
 backup
