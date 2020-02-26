@@ -10,16 +10,22 @@ first, create a `.env` file that has 2 keys: a `DISCORD_TOKEN` and `DATABASE_URL
 
 `DISCORD_TOKEN` is your discord token and `DATABASE_URL` is the location of a postgres database.
 
-```env
+*note*: `DATABASE_URL` isn't required for docker only `DISCORD_TOKEN` is.
+```bash
 DISCORD_TOKEN=your.token.here
+# not required for docker
 DATABASE_URL=postgres://user:pass@hostname:port/database
 ```
 
 then, create a `config.json` with these properties:
-  - `default_sub` - the default subreddit that will be used if the user doesn't specify one
-  - `admin` - the discord id of the bot admin (used to allow access to admin commands)
-  - `cooldown_time` - the cooldown time between commands
-  - `prefix` - the prefix that the bot will use
+  - `default_sub`:
+       the default subreddit that will be used if the user doesn't specify one
+  - `admin`:
+      the discord id of the bot admin (used to allow access to admin commands)
+  - `cooldown_time`:
+      the cooldown time between commands
+  - `prefix`:
+      the prefix that the bot will use
 
 example:
 ```json
@@ -31,7 +37,9 @@ example:
 }
 ```
 
-### manual build
+### building with `cargo`
+
+*note:* you need
 
 install the `diesel` cli
 ```bash
@@ -57,7 +65,7 @@ or
 $ ./target/release/postman
 ```
 
-### docker build
+### building with `docker`
 
 build the image
 ```bash
@@ -82,6 +90,25 @@ and run migrations
 $ sudo docker exec postman_bot_1 /bin/bash -c "diesel migration run"
 ```
 
+## backing up the database
+### docker
+backup
+```bash
+$ sudo docker exec postman_database_1 pg_dumpall -c -U postman > dump.sql
+```
+restore
+```bash
+$ cat dump.sql | sudo docker exec -i postman_database_1 psql -U postman
+```
+### cargo
+backup
+```bash
+$ pg_dumpall -c -U database_user > dump.sql
+```
+restore
+```bash
+$ cat dump.sql | psql -U database_user
+```
 ## license
 
 following rust conventions, this bot is dual licensed under the MIT and APACHE-2.0 licenses.
