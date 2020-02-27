@@ -104,7 +104,10 @@ pub fn parse_post(data: &JsonValue) -> RedditResult<Post> {
     };
 
     if image.contains("gfycat.com") && data["post_hint"] == "rich:video" {
-        image = data["secure_media"]["oembed"]["thumbnail_url"].to_string();
+        let input = data["secure_media"]["oembed"]["thumbnail_url"].to_string();
+        let re = Regex::new(r"https?://thumbs.gfycat.com/([A-Za-z]+)-size_restricted.gif").unwrap();
+        let caps = re.captures(input).unwrap();
+        image = caps.get(1).unwrap();
     }
 
     let ups = data["ups"].as_u64().unwrap();
