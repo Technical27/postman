@@ -10,7 +10,7 @@ fi
 
 if [[ -f backup.sql ]]; then
   echo "restoring database"
-  cat backup.sql | psql -U postman
+  cat backup.sql | psql -d postgres://postman:postman@database/postmandb -U postman
   backupStatus=$?
   rm backup.sql
   if [[ $backupStatus -ne 0 ]]; then
