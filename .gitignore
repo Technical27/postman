@@ -2,4 +2,4 @@
 **/*.rs.bk
 config.json
 .env
-db.sqlite3
+backup.sql

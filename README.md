@@ -83,9 +83,14 @@ backup
 ```bash
 $ sudo docker exec postman_database_1 pg_dumpall -c -U postman > dump.sql
 ```
-restore
+to restore copy the sql as `backup.sql` into the root directory
 ```bash
-$ cat dump.sql | sudo docker exec -i postman_database_1 psql -U postman
+$ cp ../your-backup.sql backup.sql
+```
+and then rebuild the image and run
+```bash
+$ sudo docker-compose build
+$ sudo docker-compose up -d
 ```
 ### cargo
 backup
