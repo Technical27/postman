@@ -4,17 +4,22 @@ use serenity::model::prelude::Message;
 
 use regex::Regex;
 
+use lazy_static::lazy_static;
+
 use super::helpers::{get_version, parse_post, send_post, send_text};
 use super::reddit::get_reddit_api;
+
+lazy_static! {
+    static ref URL_REGEX: Regex =
+        { Regex::new(r"https?://reddit.com/[a-zA-Z/_0-9]+\.json").unwrap() };
+}
 
 #[command]
 #[help_available(false)]
 pub fn debug(ctx: &mut Context, msg: &Message, mut args: Args) -> CommandResult {
     match args.single_quoted::<String>() {
         Ok(arg) => {
-            let re = Regex::new(r"https?://reddit.com/[a-zA-Z/_0-9]+\.json").unwrap();
-
-            if !re.is_match(&arg) {
+            if !URL_REGEX.is_match(&arg) {
                 return send_text(ctx, msg, "`invalid url`");
             }
 

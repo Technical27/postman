@@ -61,7 +61,7 @@ pub fn send_text(ctx: &Context, msg: &Message, text: &str) -> CommandResult {
 }
 
 lazy_static! {
-    static ref SUB_REGEX: Regex = { Regex::new(r"\b[a-zA-Z0-9]{4,20}\b").unwrap() };
+    static ref SUB_REGEX: Regex = { Regex::new(r"\b[a-zA-Z0-9]{3,20}\b").unwrap() };
 }
 
 // parses command arguments and returns a subreddit name
@@ -96,16 +96,17 @@ pub fn parse_post(data: &JsonValue) -> RedditResult<Post> {
     let author = data["author"].to_string();
     let title = data["title"].to_string();
     let permalink = data["permalink"].to_string();
-    let mut image = data["url"].to_string();
 
     let nsfw = match data["over_18"].as_bool() {
         Some(value) => value,
         None => return Err(RedditAPIError::new("failed to get nsfw info for post")),
     };
 
-    if image.contains("gfycat.com") && data["post_hint"] == "rich:video" {
-        image = data["secure_media"]["oembed"]["thumbnail_url"].to_string();
-    }
+    let image = if data["url"].contains("gfycat.com") && data["post_hint"] == "rich:video" {
+        data["secure_media"]["oembed"]["thumbnail_url"].to_string()
+    } else {
+        data["url"].to_string()
+    };
 
     let ups = data["ups"].as_u64().unwrap();
 
