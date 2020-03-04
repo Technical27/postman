@@ -69,6 +69,7 @@ pub struct AppData {
     pub cooldown_time: Duration,
     pub client_id: Option<u64>,
     pub db_pool: DatabasePool,
+    pub start_time: Instant,
 }
 
 impl AppData {
@@ -78,6 +79,7 @@ impl AppData {
             cooldown_time: Duration::from_secs(cooldown_time),
             client_id: None,
             db_pool,
+            start_time: Instant::now(),
         }
     }
 }
