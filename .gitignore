@@ -1,5 +1,4 @@
 /target
 **/*.rs.bk
-config.json
 .env
 backup.sql

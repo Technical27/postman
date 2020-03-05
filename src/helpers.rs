@@ -2,6 +2,8 @@ use serenity::client::Context;
 use serenity::framework::standard::{Args, CommandResult};
 use serenity::model::prelude::{Message, ReactionType};
 
+use std::env;
+
 use json::JsonValue;
 
 use regex::Regex;
@@ -17,7 +19,6 @@ use super::post::Post;
 use super::reddit::*;
 
 use super::app::AppData;
-use super::app::CONFIG;
 
 use super::models;
 use super::schema;
@@ -74,7 +75,7 @@ pub fn parse_sub(mut args: Args) -> RedditResult<String> {
         return Ok(sub);
     }
 
-    Ok(CONFIG["default_sub"].to_string())
+    Ok(env::var("POSTMAN_DEFAULT_SUB").unwrap())
 }
 
 // helper to check if a discord channel is nsfw
