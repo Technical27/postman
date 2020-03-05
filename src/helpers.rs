@@ -75,7 +75,12 @@ pub fn parse_sub(mut args: Args) -> RedditResult<String> {
         return Ok(sub);
     }
 
-    Ok(env::var("POSTMAN_DEFAULT_SUB").unwrap())
+    match env::var("POSTMAN_DEFAULT_SUB") {
+        Ok(sub) => Ok(sub),
+        Err(_) => Err(RedditAPIError::new(
+            "POSTMAN_DEFAULT_SUB wasn't specified, this is an error with the bot config",
+        )),
+    }
 }
 
 // helper to check if a discord channel is nsfw

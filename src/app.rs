@@ -81,7 +81,11 @@ impl App {
         }
 
         if ADMIN_COMMANDS.contains(&cmd_name)
-            && env::var("POSTMAN_ADMIN").unwrap().parse::<u64>().unwrap() != *msg.author.id.as_u64()
+            && env::var("POSTMAN_ADMIN")
+                .expect("POSTMAN_ADMIN wasn't specified")
+                .parse::<u64>()
+                .unwrap()
+                != *msg.author.id.as_u64()
         {
             return false;
         }
@@ -119,7 +123,7 @@ impl App {
 
     pub fn start() -> Result<(), AppError> {
         let mgr: r2d2::ConnectionManager<PgConnection> = r2d2::ConnectionManager::new(
-            env::var("POSTMAN_DATABASE_URL").expect("no database location was specified"),
+            env::var("POSTMAN_DATABASE_URL").expect("POSTMAN_DATABASE_URL wasn't specified"),
         );
 
         let pool = r2d2::Pool::builder()
@@ -128,11 +132,11 @@ impl App {
             .expect("error creating database pool");
 
         let mut client = Client::new(
-            env::var("DISCORD_TOKEN").expect("no discord token was specified"),
+            env::var("POSTMAN_DISCORD_TOKEN").expect("POSTMAN_DISCORD_TOKEN wasn't specified"),
             AppHandle,
         )?;
 
-        let prefix = env::var("POSTMAN_PREFIX").expect("no prefix was specified");
+        let prefix = env::var("POSTMAN_PREFIX").expect("POSTMAN_PREFIX wasn't specified");
 
         let cooldown_time = env::var("POSTMAN_COOLDOWN_TIME")
             .unwrap_or("3".to_string())
