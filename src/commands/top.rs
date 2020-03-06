@@ -11,9 +11,5 @@ use super::helpers::*;
 #[example("top")]
 #[max_args(1)]
 pub fn top(ctx: &mut Context, msg: &Message, args: Args) -> CommandResult {
-    handle_post(
-        &format!("https://reddit.com/r/{}/top.json?t=hour", &parse_sub(args)?),
-        ctx,
-        msg,
-    )
+    handle_post("top.json?t=hour", args, ctx, msg)
 }

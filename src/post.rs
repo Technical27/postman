@@ -1,3 +1,5 @@
+use super::reddit::RedditAPIError;
+
 // a struct to represent a post on reddit
 #[derive(Debug, Clone)]
 pub struct Post {
@@ -35,6 +37,40 @@ impl Post {
     // returns a link to the post itself
     pub fn post_url(&self) -> String {
         format!("https://reddit.com{}", &self.permalink)
+    }
+}
+
+// an enum to represent the different error that can happen when parsing posts
+#[derive(Debug, Clone)]
+pub enum PostError {
+    // the sub doesn't contain any posts
+    NoPostsFound,
+    // can't find any images in the sub
+    NoImagesFound,
+    // can't find any sfw images in the sub
+    NoSafePostsFound,
+    // an error with the api/json parsing
+    RedditError(RedditAPIError),
+}
+
+pub type PostResult = Result<Post, PostError>;
+
+impl std::fmt::Display for PostError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            Self::NoPostsFound => write!(f, "```can't find any posts in that sub```"),
+            Self::NoImagesFound => write!(f, "```can't find any images```"),
+            Self::NoSafePostsFound => write!(f, "```no safe-for-work posts found```"),
+            Self::RedditError(e) => write!(f, "```something broke:\n{:?}```", e),
+        }
+    }
+}
+
+impl std::error::Error for PostError {}
+
+impl From<RedditAPIError> for PostError {
+    fn from(e: RedditAPIError) -> Self {
+        PostError::RedditError(e)
     }
 }
 

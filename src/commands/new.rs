@@ -11,9 +11,5 @@ use super::helpers::*;
 #[example("new")]
 #[max_args(1)]
 pub fn new(ctx: &mut Context, msg: &Message, args: Args) -> CommandResult {
-    handle_post(
-        &format!("https://reddit.com/r/{}/new.json", &parse_sub(args)?),
-        ctx,
-        msg,
-    )
+    handle_post("new.json", args, ctx, msg)
 }
