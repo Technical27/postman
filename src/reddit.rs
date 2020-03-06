@@ -53,6 +53,13 @@ pub fn get_reddit_api(url: &str) -> RedditResult<JsonValue> {
 
     let res = http.get(url).send()?;
 
+    if !res.status().is_success() {
+        return Err(RedditAPIError(format!(
+            "http error: {}",
+            res.status().as_u16()
+        )));
+    }
+
     let text = res.text()?;
 
     Ok(json::parse(&text)?)

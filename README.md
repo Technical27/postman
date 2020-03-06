@@ -6,35 +6,23 @@ a discord bot that gets images from reddit. simple.
 
 ## building
 ### config files
-first, create a `.env` file that has 2 keys: a `DISCORD_TOKEN` and `DATABASE_URL`.
+first, create a `.env` file that has the following keys:
+- `POSTMAN_DATABASE_URL`: location of a postgres database (not required for docker)
+- `POSTMAN_DISCORD_TOKEN`: the discord token the bot will use
+- `POSTMAN_DEFAULT_SUB`: the default subreddit that commands use
+- `POSTMAN_ADMIN`: the discord id of the admin user (most likely yours)
+- `POSTMAN_COOLDOWN_TIME`: the cooldown between comands in seconds (default 3 seconds)
+- `POSTMAN_PREFIX`: the prefix the bot will use
 
-`DISCORD_TOKEN` is your discord token and `DATABASE_URL` is the location of a postgres database.
-
-*note*: `DATABASE_URL` isn't required for docker only `DISCORD_TOKEN` is.
 ```bash
-DISCORD_TOKEN=your.token.here
 # not required for docker
-DATABASE_URL=postgres://user:pass@hostname:port/database
-```
-
-then, create a `config.json` with these properties:
-  - `default_sub`:
-       the default subreddit that will be used if the user doesn't specify one
-  - `admin`:
-      the discord id of the bot admin (used to allow access to admin commands)
-  - `cooldown_time`:
-      the cooldown time between commands
-  - `prefix`:
-      the prefix that the bot will use
-
-example:
-```json
-{
-  "default_sub": "memes",
-  "admin": 99999999999,
-  "cooldown_time": 3,
-  "prefix": "~"
-}
+POSTMAN_DATABASE_URL=postgres://user:pass@hostname:port/database
+POSTMAN_DISCORD_TOKEN=your.token.here
+POSTMAN_DEFAULT_SUB=memes
+POSTMAN_ADMIN=99999999999
+# not required (default 3 seconds)
+POSTMAN_COOLDOWN_TIME=5
+POSTMAN_PREFIX=-
 ```
 
 ### building with `cargo`
@@ -48,7 +36,7 @@ $ cargo install --no-default-features --features postgres diesel_cli
 
 run migrations
 ```bash
-$ diesel migration run
+$ diesel migration run --database-url your-database-url
 ```
 
 build

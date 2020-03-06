@@ -3,13 +3,9 @@ use serenity::framework::standard::{macros::group, CommandResult, StandardFramew
 use serenity::model::prelude::Message;
 use serenity::prelude::TypeMapKey;
 
-use json::JsonValue;
-
-use lazy_static::lazy_static;
-
 use std::collections::BTreeMap;
 
-use std::{env, error, fs};
+use std::{env, error};
 
 use std::time::{Duration, Instant};
 
@@ -24,18 +20,6 @@ use super::events::AppHandle;
 use super::helpers::send_text;
 use super::models;
 use super::schema;
-
-lazy_static! {
-    pub static ref CONFIG: JsonValue = {
-        trace!("reading config");
-        let data = json::parse(
-            &String::from_utf8(fs::read("config.json").expect("failed to load config file"))
-                .unwrap(),
-        )
-        .expect("failed to parse config file");
-        data
-    };
-}
 
 static ADMIN_COMMANDS: &[&str] = &["test", "debug"];
 static MAIN_COMMANDS: &[&str] = &["new", "top", "random", "rising"];
@@ -58,7 +42,7 @@ impl From<serenity::Error> for AppError {
 }
 
 #[group]
-#[commands(top, test, random, new, rising, debug, stats)]
+#[commands(top, random, new, rising, debug, stats)]
 #[help_available]
 struct General;
 
@@ -95,7 +79,11 @@ impl App {
         }
 
         if ADMIN_COMMANDS.contains(&cmd_name)
-            && CONFIG["admin"].as_u64().unwrap() != *msg.author.id.as_u64()
+            && env::var("POSTMAN_ADMIN")
+                .expect("POSTMAN_ADMIN wasn't specified")
+                .parse::<u64>()
+                .unwrap()
+                != *msg.author.id.as_u64()
         {
             return false;
         }
@@ -107,7 +95,7 @@ impl App {
 
         if let Some(ptime) = appdata.cooldowns.get(&msg.author.tag()) {
             if ptime.elapsed() < appdata.cooldown_time {
-                send_text(ctx, msg, "`please wait a bit before doing any command`").unwrap();
+                send_text(ctx, msg, "```please wait a bit before doing any command```").unwrap();
                 return false;
             }
         }
@@ -133,7 +121,7 @@ impl App {
 
     pub fn start() -> Result<(), AppError> {
         let mgr: r2d2::ConnectionManager<PgConnection> = r2d2::ConnectionManager::new(
-            env::var("DATABASE_URL").expect("no database location was specified"),
+            env::var("POSTMAN_DATABASE_URL").expect("POSTMAN_DATABASE_URL wasn't specified"),
         );
 
         let pool = r2d2::Pool::builder()
@@ -142,13 +130,16 @@ impl App {
             .expect("error creating database pool");
 
         let mut client = Client::new(
-            env::var("DISCORD_TOKEN").expect("no discord token was specified"),
+            env::var("POSTMAN_DISCORD_TOKEN").expect("POSTMAN_DISCORD_TOKEN wasn't specified"),
             AppHandle,
         )?;
 
-        let prefix = CONFIG["prefix"].to_string();
+        let prefix = env::var("POSTMAN_PREFIX").expect("POSTMAN_PREFIX wasn't specified");
 
-        let cooldown_time = CONFIG["cooldown_time"].as_u64().unwrap_or(3);
+        let cooldown_time = env::var("POSTMAN_COOLDOWN_TIME")
+            .unwrap_or("3".to_string())
+            .parse::<u64>()
+            .unwrap();
 
         client.with_framework(
             StandardFramework::new()

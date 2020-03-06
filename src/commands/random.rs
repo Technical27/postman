@@ -5,26 +5,28 @@ use serenity::model::prelude::Message;
 use std::thread;
 use std::time::Duration;
 
-use log::trace;
-
 use super::helpers::*;
-use super::post::Post;
+use super::post::*;
 use super::reddit::*;
 
-fn get_random(sub: &str, nsfw: bool, tries: u8) -> RedditResult<Post> {
-    thread::sleep(Duration::from_millis(100));
-    let res = get_reddit_api(&format!("https://reddit.com/r/{}/random.json", sub))?;
-    if tries > 4 {
-        return Err(RedditAPIError::new("can't find any post"));
-    }
-    if let Ok(post) = parse_post(&res[0]["data"]["children"][0]) {
-        if post.nsfw && !nsfw {
-            return get_random(sub, nsfw, tries + 1);
+fn get_random(sub: &str, nsfw: bool) -> PostResult {
+    for _ in 0..5 {
+        let res = get_reddit_api(&format!("https://reddit.com/r/{}/random.json", sub))?;
+        let post_data = &res[0]["data"]["children"][0];
+
+        if post_data.is_null() {
+            return Err(PostError::NoPostsFound);
         }
-        trace!("sending post: {:?}", post);
-        return Ok(post);
+
+        if let Some(post) = parse_post(post_data) {
+            if !post.nsfw || nsfw {
+                return Ok(post);
+            }
+        }
+
+        thread::sleep(Duration::from_millis(100));
     }
-    return get_random(sub, nsfw, tries + 1);
+    Err(PostError::NoImagesFound)
 }
 
 #[command]
@@ -34,8 +36,13 @@ fn get_random(sub: &str, nsfw: bool, tries: u8) -> RedditResult<Post> {
 #[example("random")]
 #[max_args(1)]
 pub fn random(ctx: &mut Context, msg: &Message, args: Args) -> CommandResult {
-    match get_random(&parse_sub(args)?, check_nsfw(ctx, msg)?, 1) {
+    let sub = match parse_sub(args) {
+        Ok(sub) => sub,
+        Err(e) => return send_text(ctx, msg, &format!("{}", e)),
+    };
+
+    match get_random(&sub, check_nsfw(ctx, msg)?) {
         Ok(post) => send_post(ctx, msg, &post),
-        Err(err) => send_text(ctx, msg, &format!("`{}`", err)),
+        Err(err) => send_text(ctx, msg, &format!("{}", err)),
     }
 }
