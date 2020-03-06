@@ -95,7 +95,7 @@ impl App {
 
         if let Some(ptime) = appdata.cooldowns.get(&msg.author.tag()) {
             if ptime.elapsed() < appdata.cooldown_time {
-                send_text(ctx, msg, "`please wait a bit before doing any command`").unwrap();
+                send_text(ctx, msg, "```please wait a bit before doing any command```").unwrap();
                 return false;
             }
         }
