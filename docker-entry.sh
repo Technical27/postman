@@ -21,7 +21,7 @@ fi
 
 if [ ! -f .init ]; then
   echo "running migrations"
-  diesel migration run
+  diesel migration run --database-url $POSTMAN_DATABASE_URL
   touch .init
 fi
 

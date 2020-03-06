@@ -36,7 +36,7 @@ $ cargo install --no-default-features --features postgres diesel_cli
 
 run migrations
 ```bash
-$ diesel migration run
+$ diesel migration run --database-url your-database-url
 ```
 
 build

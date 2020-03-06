@@ -9,6 +9,6 @@ services:
   bot:
     build: .
     environment:
-      DATABASE_URL: postgres://postman:postman@database/postmandb
+      POSTMAN_DATABASE_URL: postgres://postman:postman@database/postmandb
     depends_on:
       - database
